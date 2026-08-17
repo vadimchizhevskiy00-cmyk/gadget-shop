@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин гаджетов</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            margin: 0;
+            padding: 16px;
+        }
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .welcome-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 40px;
+        }
+        .category-btn {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        .filter-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+            color: var(--tg-theme-text-color, #000);
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        .product-card {
+            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .product-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .product-price {
+            color: var(--tg-theme-link-color, #2481cc);
+            margin: 6px 0;
+            font-weight: 600;
+        }
+        .product-desc {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        .buy-btn {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--tg-theme-hint-color, #999);
+            color: var(--tg-theme-text-color, #000);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    {% if not category %}
+        <h1>👋 Что вы ищете?</h1>
+        <div class="welcome-container">
+            <a href="/?category=телефоны" class="category-btn">📱 Телефоны</a>
+            <a href="/?category=Чехлы" class="category-btn">🛡️ Чехлы</a>
+            <a href="/?category=Стекла" class="category-btn">✨ Защитные стекла</a>
+        </div>
+    {% else %}
+        <button class="back-btn" onclick="window.location.href='/'">⬅ Назад к выбору</button>
+        <h1>Категория: {{ category }}</h1>
+
+        {% if category.lower() == 'телефоны' %}
+        <select class="filter-select" id="brandFilter" onchange="filterBrand(this)">
+            <option value="all" {% if not brand or brand == 'all' %}selected{% endif %}>Все марки телефонов</option>
+            <option value="Samsung" {% if brand == 'Samsung' %}selected{% endif %}>Samsung</option>
+            <option value="Redmi" {% if brand == 'Redmi' %}selected{% endif %}>Redmi</option>
+            <option value="Poco" {% if brand == 'Poco' %}selected{% endif %}>Poco</option>
+            <option value="Infinix" {% if brand == 'Infinix' %}selected{% endif %}>Infinix</option>
+        </select>
+        {% endif %}
+
+        <div id="shop-container">
+            {% if products %}
+                {% for p in products %}
+                <div class="product-card">
+                    <div class="product-title">{{ p.Название }}</div>
+                    {% if p.Память and p.Память != '-' %}
+                    <div style="font-size: 13px; opacity: 0.7;">Память: {{ p.Память }}</div>
+                    {% endif %}
+                    <div class="product-price">{{ p.Цена }} грн</div>
+                    <div class="product-desc">{{ p.Описание }}</div>
+                    <button class="buy-btn" onclick="orderItem('{{ p.Название }}', '{{ p.Цена }}')">Заказать</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="text-align: center; opacity: 0.6;">В этой категории пока нет товаров.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        function filterBrand(selectElement) {
+            let selectedBrand = selectElement.value;
+            window.location.href = `/?category=телефоны&brand=${selectedBrand}`;
+        }
+
+        function orderItem(title, price) {
+            alert(`Вы выбрали: ${title} за ${price} грн.`);
+        }
+    </script>
+</body>
+</html>
