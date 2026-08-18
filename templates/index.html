@@ -37,7 +37,7 @@
             text-decoration: none;
             display: block;
         }
-        .filter-select {
+        .filter-select, .search-input {
             width: 100%;
             padding: 12px;
             border-radius: 10px;
@@ -45,7 +45,8 @@
             background: var(--tg-theme-secondary-bg-color, #f1f1f1);
             color: var(--tg-theme-text-color, #000);
             font-size: 15px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
         }
         .product-card {
             background: var(--tg-theme-secondary-bg-color, #f1f1f1);
@@ -159,8 +160,9 @@
         <button class="back-btn" onclick="window.location.href='/'">⬅ Назад к выбору</button>
         <h1>Категория: {{ category }}</h1>
 
+        <!-- Селект марок только для телефонов -->
         {% if category.lower() == 'телефоны' %}
-        <select class="filter-select" id="brandFilter" onchange="filterBrand(this)">
+        <select class="filter-select" id="brandFilter" onchange="applyFilters()">
             <option value="all" {% if not brand or brand == 'all' %}selected{% endif %}>Все марки телефонов</option>
             <option value="Samsung" {% if brand == 'Samsung' %}selected{% endif %}>Samsung</option>
             <option value="Redmi" {% if brand == 'Redmi' %}selected{% endif %}>Redmi</option>
@@ -168,6 +170,9 @@
             <option value="Infinix" {% if brand == 'Infinix' %}selected{% endif %}>Infinix</option>
         </select>
         {% endif %}
+
+        <!-- Строка поиска -->
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." value="{{ search if search else '' }}" onkeypress="handleSearch(event)">
 
         <div id="shop-container">
             {% if products %}
@@ -183,12 +188,12 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <p style="text-align: center; opacity: 0.6;">В этой категории пока нет товаров.</p>
+                <p style="text-align: center; opacity: 0.6;">Ничего не найдено.</p>
             {% endif %}
         </div>
     {% endif %}
 
-    <!-- Модальное окно заказа (самовывоз) -->
+    <!-- Модальное окно заказа -->
     <div class="modal" id="orderModal">
         <div class="modal-content">
             <h3>Заказ на самовывоз</h3>
@@ -211,9 +216,25 @@
         let selectedProduct = '';
         let selectedPrice = '';
 
-        function filterBrand(selectElement) {
-            let selectedBrand = selectElement.value;
-            window.location.href = `/?category=телефоны&brand=${selectedBrand}`;
+        // Функция применения фильтров (бренд + поиск)
+        function applyFilters() {
+            let category = "{{ category }}";
+            let brandSelect = document.getElementById('brandFilter');
+            let brand = brandSelect ? brandSelect.value : 'all';
+            let search = document.getElementById('searchInput').value;
+
+            let url = `/?category=${category}&brand=${brand}`;
+            if (search) {
+                url += `&search=${encodeURIComponent(search)}`;
+            }
+            window.location.href = url;
+        }
+
+        // Поиск по нажатию Enter
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                applyFilters();
+            }
         }
 
         function openOrderModal(title, price) {
@@ -228,8 +249,8 @@
         }
 
         function submitOrder() {
-            let name = document.getElementById('clientName').value;
-            let phone = document.getElementById('clientPhone').value;
+            let name = document.getElementById('clientName', '').value;
+            let phone = document.getElementById('clientPhone', '').value;
 
             if (!name || !phone) {
                 alert('Пожалуйста, укажите имя и номер телефона!');
