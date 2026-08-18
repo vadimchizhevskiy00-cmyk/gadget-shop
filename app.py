@@ -4,7 +4,6 @@ import requests
 
 app = Flask(__name__)
 
-# Токен вашего бота и ваш Telegram Chat ID (для отправки уведомлений о заказе)
 TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
 ADMIN_CHAT_ID = "396778432"
 
@@ -23,17 +22,32 @@ def index():
     products = get_products()
     selected_category = request.args.get('category')
     selected_brand = request.args.get('brand')
+    search_query = request.args.get('search', '').strip().lower()
     
     filtered_products = []
     if selected_category:
+        # Фильтрация по категории
         filtered_products = [p for p in products if str(p.get('Категория')).strip().lower() == selected_category.lower()]
         
+        # Если выбрана марка (для телефонов)
         if selected_brand and selected_brand != 'all':
             filtered_products = [p for p in filtered_products if selected_brand.lower() in str(p.get('Название')).lower()]
 
-    return render_template('index.html', products=filtered_products, category=selected_category, brand=selected_brand)
+        # Если введена строка поиска
+        if search_query:
+            filtered_products = [
+                p for p in filtered_products 
+                if search_query in str(p.get('Название', '')).lower() or search_query in str(p.get('Описание', '')).lower()
+            ]
 
-# Маршрут для обработки заказа (самовывоз)
+    return render_template(
+        'index.html', 
+        products=filtered_products, 
+        category=selected_category, 
+        brand=selected_brand,
+        search=search_query
+    )
+
 @app.route('/order', methods=['POST'])
 def create_order():
     data = request.json
@@ -42,7 +56,6 @@ def create_order():
     name = data.get('name')
     phone = data.get('phone')
 
-    # Текст сообщения для администратора (самовывоз)
     message = (
         f"🚨 **Новый заказ на самовывоз!**\n\n"
         f"📦 Товар: {product_title}\n"
@@ -51,7 +64,6 @@ def create_order():
         f"📞 Телефон: {phone}"
     )
 
-    # Отправка уведомления в Telegram (если токен настроен)
     if TELEGRAM_BOT_TOKEN != "ВАШ_ТОКЕН_БОТА":
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {
