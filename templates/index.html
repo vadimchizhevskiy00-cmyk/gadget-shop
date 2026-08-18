@@ -3,282 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Магазин гаджетов</title>
+    <title>Магазин</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            margin: 0;
-            padding: 16px;
-        }
-        h1 {
-            font-size: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .welcome-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 40px;
-        }
-        .category-btn {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-        }
-        .filter-select, .search-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid var(--tg-theme-hint-color, #ccc);
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            color: var(--tg-theme-text-color, #000);
-            font-size: 15px;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-        }
-        .product-card {
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-        }
-        .product-title {
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .product-price {
-            color: var(--tg-theme-link-color, #2481cc);
-            margin: 6px 0;
-            font-weight: 600;
-        }
-        .product-desc {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 10px;
-        }
-        .buy-btn {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-        }
-        .back-btn {
-            background: transparent;
-            border: 1px solid var(--tg-theme-hint-color, #999);
-            color: var(--tg-theme-text-color, #000);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-        .modal-content {
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            padding: 20px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .modal-content h3 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-        .form-input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--tg-theme-hint-color, #ccc);
-            background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-            color: var(--tg-theme-text-color, #000);
-            box-sizing: border-box;
-        }
-        .modal-btns {
-            display: flex;
-            gap: 10px;
-        }
-        .submit-btn {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            flex: 1;
-        }
-        .cancel-btn {
-            background: transparent;
-            border: 1px solid var(--tg-theme-hint-color, #999);
-            color: var(--tg-theme-text-color, #000);
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        body { font-family: sans-serif; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); padding: 16px; margin: 0; }
+        .category-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 16px; border-radius: 12px; font-weight: bold; width: 100%; margin-bottom: 10px; }
+        .search-input, .filter-select, .form-input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+        .product-card { background: var(--tg-theme-secondary-bg-color); padding: 12px; border-radius: 12px; margin-bottom: 12px; }
+        .buy-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; padding: 16px; box-sizing: border-box; }
+        .modal-content { background: var(--tg-theme-bg-color); padding: 20px; border-radius: 16px; width: 100%; max-width: 400px; }
     </style>
 </head>
 <body>
 
     {% if not category %}
-        <h1>👋 Что вы ищете?</h1>
-        <div class="welcome-container">
-            <a href="/?category=телефоны" class="category-btn">📱 Телефоны</a>
-            <a href="/?category=Чехлы" class="category-btn">🛡️ Чехлы</a>
-            <a href="/?category=Стекла" class="category-btn">✨ Защитные стекла</a>
-        </div>
+        <h1>Каталог</h1>
+        <a href="/?category=телефоны" class="category-btn" style="display:block; text-align:center; text-decoration:none;">📱 Телефоны</a>
+        <a href="/?category=Чехлы" class="category-btn" style="display:block; text-align:center; text-decoration:none;">🛡️ Чехлы</a>
     {% else %}
-        <button class="back-btn" onclick="window.location.href='/'">⬅ Назад к выбору</button>
-        <h1>Категория: {{ category }}</h1>
-
-        <!-- Селект марок только для телефонов -->
-        {% if category.lower() == 'телефоны' %}
-        <select class="filter-select" id="brandFilter" onchange="applyFilters()">
-            <option value="all" {% if not brand or brand == 'all' %}selected{% endif %}>Все марки телефонов</option>
-            <option value="Samsung" {% if brand == 'Samsung' %}selected{% endif %}>Samsung</option>
-            <option value="Redmi" {% if brand == 'Redmi' %}selected{% endif %}>Redmi</option>
-            <option value="Poco" {% if brand == 'Poco' %}selected{% endif %}>Poco</option>
-            <option value="Infinix" {% if brand == 'Infinix' %}selected{% endif %}>Infinix</option>
-        </select>
-        {% endif %}
-
-        <!-- Строка поиска -->
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." value="{{ search if search else '' }}" onkeypress="handleSearch(event)">
-
-        <div id="shop-container">
-            {% if products %}
-                {% for p in products %}
-                <div class="product-card">
-                    <div class="product-title">{{ p.Название }}</div>
-                    {% if p.Память and p.Память != '-' %}
-                    <div style="font-size: 13px; opacity: 0.7;">Память: {{ p.Память }}</div>
-                    {% endif %}
-                    <div class="product-price">{{ p.Цена }} грн</div>
-                    <div class="product-desc">{{ p.Описание }}</div>
-                    <button class="buy-btn" onclick="openOrderModal('{{ p.Название }}', '{{ p.Цена }}')">Заказать</button>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p style="text-align: center; opacity: 0.6;">Ничего не найдено.</p>
-            {% endif %}
+        <button onclick="window.location.href='/'" class="category-btn" style="background:none; border:1px solid #ccc; color:inherit;">⬅ Назад</button>
+        <button onclick="openCartModal()" class="category-btn">🛒 Корзина (<span id="cartCount">0</span>)</button>
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
+        
+        {% for p in products %}
+        <div class="product-card">
+            <div><strong>{{ p.Название }}</strong> — {{ p.Цена }} грн</div>
+            <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
         </div>
+        {% endfor %}
     {% endif %}
 
-    <!-- Модальное окно заказа -->
-    <div class="modal" id="orderModal">
+    <div class="modal" id="cartModal">
         <div class="modal-content">
-            <h3>Заказ на самовывоз</h3>
-            <p id="modalProductInfo" style="font-size: 14px; opacity: 0.8; margin-bottom: 12px;"></p>
-            
-            <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
-            <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
-
-            <div class="modal-btns">
-                <button class="submit-btn" onclick="submitOrder()">Подтвердить</button>
-                <button class="cancel-btn" onclick="closeOrderModal()">Отмена</button>
-            </div>
+            <h3>Ваш заказ</h3>
+            <div id="cartItemsList"></div>
+            <input type="text" id="clientName" class="form-input" placeholder="Имя">
+            <input type="tel" id="clientPhone" class="form-input" placeholder="Телефон">
+            <button class="buy-btn" onclick="submitOrder()">Подтвердить заказ</button>
+            <button onclick="closeModal()" class="category-btn" style="background:none; color:gray;">Закрыть</button>
         </div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        function updateUI() { document.getElementById('cartCount').innerText = cart.length; }
+        updateUI();
 
-        let selectedProduct = '';
-        let selectedPrice = '';
-
-        // Функция применения фильтров (бренд + поиск)
-        function applyFilters() {
-            let category = "{{ category }}";
-            let brandSelect = document.getElementById('brandFilter');
-            let brand = brandSelect ? brandSelect.value : 'all';
-            let search = document.getElementById('searchInput').value;
-
-            let url = `/?category=${category}&brand=${brand}`;
-            if (search) {
-                url += `&search=${encodeURIComponent(search)}`;
-            }
-            window.location.href = url;
+        function addToCart(title, price) { cart.push({title, price}); localStorage.setItem('cart', JSON.stringify(cart)); updateUI(); alert('Добавлено!'); }
+        
+        function openCartModal() {
+            let list = document.getElementById('cartItemsList');
+            list.innerHTML = cart.map(i => `<div>${i.title} - ${i.price} грн</div>`).join('');
+            document.getElementById('cartModal').style.display = 'flex';
         }
 
-        // Поиск по нажатию Enter
-        function handleSearch(event) {
-            if (event.key === 'Enter') {
-                applyFilters();
-            }
-        }
-
-        function openOrderModal(title, price) {
-            selectedProduct = title;
-            selectedPrice = price;
-            document.getElementById('modalProductInfo').innerText = `${title} — ${price} грн`;
-            document.getElementById('orderModal').style.display = 'flex';
-        }
-
-        function closeOrderModal() {
-            document.getElementById('orderModal').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('cartModal').style.display = 'none'; }
 
         function submitOrder() {
-            let name = document.getElementById('clientName', '').value;
-            let phone = document.getElementById('clientPhone', '').value;
-
-            if (!name || !phone) {
-                alert('Пожалуйста, укажите имя и номер телефона!');
-                return;
-            }
-
             fetch('/order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    product: selectedProduct,
-                    price: selectedPrice,
-                    name: name,
-                    phone: phone
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert('Спасибо! Заказ принят. Ждем вас в магазине для самовывоза.');
-                closeOrderModal();
-                tg.close();
-            })
-            .catch(error => {
-                console.error('Ошибка:', error);
-                alert('Произошла ошибка при отправке заказа.');
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ items: cart, name: document.getElementById('clientName').value, phone: document.getElementById('clientPhone').value })
+            }).then(() => { 
+                alert('Заказ оформлен!'); localStorage.removeItem('cart'); cart=[]; updateUI(); closeModal(); window.Telegram.WebApp.close(); 
             });
+        }
+
+        function applyFilters() {
+            let s = document.getElementById('searchInput').value;
+            window.location.href = `/?category={{ category }}&search=${encodeURIComponent(s)}`;
         }
     </script>
 </body>
