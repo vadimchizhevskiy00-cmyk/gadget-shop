@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Магазин</title>
+    <title>Магазин гаджетов</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -16,18 +16,21 @@
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
         
         .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; text-align: center; text-decoration: none; box-sizing: border-box; }
-        .cart-bar { position: sticky; top: 0; padding: 10px 0; background: var(--bg); z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .cart-bar { position: sticky; top: 0; padding: 10px 0; background: var(--bg); z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--secondary); }
         
         .search-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--secondary); box-sizing: border-box; }
         
         .product-card { background: var(--secondary); padding: 16px; border-radius: 16px; margin-bottom: 12px; }
         .product-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        .product-price { color: var(--accent); font-weight: bold; margin-bottom: 8px; }
+        .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
+        .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 8px; }
+        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 4px; }
+        
         .buy-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
-        .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; background: var(--secondary); color: var(--text); }
     </style>
 </head>
 <body>
@@ -39,7 +42,7 @@
         <a href="/?category=Стекла" class="nav-btn">✨ Защитные стекла</a>
     {% else %}
         <div class="cart-bar">
-            <button onclick="window.location.href='/'" style="background:none; border:none; font-size: 20px;">⬅</button>
+            <button onclick="window.location.href='/'" style="background:none; border:none; font-size: 20px; color: var(--text);">⬅</button>
             <button onclick="openCartModal()" class="nav-btn" style="width: auto; margin: 0;">🛒 <span id="cartCount">0</span></button>
         </div>
         
@@ -48,6 +51,10 @@
         {% for p in products %}
         <div class="product-card">
             <div class="product-title">{{ p.Название }}</div>
+            {% if p.Память and p.Память != '-' %}
+            <div class="memory-tag">Память: {{ p.Память }}</div>
+            {% endif %}
+            <div class="product-desc">{{ p.Описание }}</div>
             <div class="product-price">{{ p.Цена }} грн</div>
             <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
         </div>
@@ -58,8 +65,8 @@
         <div class="modal-content">
             <h3>Ваш заказ</h3>
             <div id="cartItemsList" style="margin-bottom: 15px;"></div>
-            <input type="text" id="clientName" class="form-input" placeholder="Имя">
-            <input type="tel" id="clientPhone" class="form-input" placeholder="Телефон">
+            <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
+            <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
             <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:10px;">Закрыть</button>
         </div>
@@ -72,9 +79,15 @@
         function updateUI() { document.getElementById('cartCount').innerText = cart.length; }
         updateUI();
 
-        function addToCart(title, price) { cart.push({title, price}); localStorage.setItem('cart', JSON.stringify(cart)); updateUI(); alert('Добавлено!'); }
+        function addToCart(title, price) { 
+            cart.push({title, price}); 
+            localStorage.setItem('cart', JSON.stringify(cart)); 
+            updateUI(); 
+            alert(title + ' добавлен в корзину!'); 
+        }
         
         function openCartModal() {
+            if(cart.length === 0) { alert('Корзина пуста'); return; }
             let list = document.getElementById('cartItemsList');
             list.innerHTML = cart.map(i => `<div>${i.title} — ${i.price} грн</div>`).join('');
             document.getElementById('cartModal').style.display = 'flex';
@@ -86,11 +99,14 @@
             let name = document.getElementById('clientName').value;
             let phone = document.getElementById('clientPhone').value;
             if(!name || !phone) { alert('Введите имя и телефон!'); return; }
+            
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phone })
             }).then(() => { 
-                alert('Заказ принят!'); localStorage.removeItem('cart'); cart=[]; updateUI(); closeModal(); tg.close(); 
+                alert('Спасибо! Ваш заказ принят.'); 
+                localStorage.removeItem('cart'); 
+                cart=[]; updateUI(); closeModal(); tg.close(); 
             });
         }
 
