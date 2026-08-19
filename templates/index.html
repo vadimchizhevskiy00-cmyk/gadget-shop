@@ -51,9 +51,12 @@
         {% for p in products %}
         <div class="product-card">
             <div class="product-title">{{ p.Название }}</div>
-            {% if p.Память and p.Память != '-' %}
+            
+            <!-- Показываем память ТОЛЬКО для телефонов -->
+            {% if category.lower() == 'телефоны' and p.Память and p.Память != '-' %}
             <div class="memory-tag">Память: {{ p.Память }}</div>
             {% endif %}
+            
             <div class="product-desc">{{ p.Описание }}</div>
             <div class="product-price">{{ p.Цена }} грн</div>
             <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
