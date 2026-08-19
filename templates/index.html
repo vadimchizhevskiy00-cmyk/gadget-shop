@@ -21,7 +21,10 @@
         .search-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--secondary); box-sizing: border-box; }
         
         .product-card { background: var(--secondary); padding: 16px; border-radius: 16px; margin-bottom: 16px; }
-        .product-img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; background: #ddd; }
+        
+        /* Изменили cover на contain, чтобы фото показывалось полностью */
+        .product-img { width: 100%; height: 220px; object-fit: contain; border-radius: 12px; margin-bottom: 12px; background: var(--bg); }
+        
         .product-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
         .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
         .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 8px; }
@@ -51,14 +54,12 @@
         
         {% for p in products %}
         <div class="product-card">
-            <!-- Отображение фото -->
             {% if p.Фото %}
             <img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">
             {% endif %}
 
             <div class="product-title">{{ p.Название }}</div>
             
-            <!-- Память только для телефонов -->
             {% if category.lower() == 'телефоны' and p.Память and p.Память != '-' %}
             <div class="memory-tag">Память: {{ p.Память }}</div>
             {% endif %}
