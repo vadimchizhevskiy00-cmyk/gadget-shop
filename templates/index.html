@@ -16,36 +16,39 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; }
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
         
-        .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; text-align: center; text-decoration: none; box-sizing: border-box; }
+        .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: none; background: var(--accent); color: white; font-weight: bold; text-align: center; text-decoration: none; box-sizing: border-box; cursor: pointer; }
         .cart-bar { position: sticky; top: 0; padding: 10px 0; background: var(--bg); z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--secondary); }
         
-        .search-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; }
+        .search-input { width: 100%; padding: 12px; margin: 10px 0 15px 0; border-radius: 12px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; outline: none; }
         
-        .product-card { background: var(--secondary); padding: 16px; border-radius: 16px; margin-bottom: 16px; }
+        .category-title { font-size: 13px; opacity: 0.6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+
+        /* Карточка товара с мягкой тенью и скруглением */
+        .product-card { background: var(--secondary); padding: 16px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         
-        /* Адаптация картинки под любую тему */
+        /* Картинка без фона и рамок для вырезанных PNG */
         .product-img { 
             width: 100%; 
-            height: 200px; /* Немного уменьшили высоту для компактности */
+            height: 200px; 
             object-fit: contain; 
             margin-bottom: 12px; 
-            background: transparent; /* Теперь фон прозрачный */
-            padding: 10px; 
+            background: transparent; 
+            padding: 5px; 
             box-sizing: border-box;
-            border: none; /* Рамка больше не нужна */
-        }
+            border: none;
         }
         
         .product-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
         .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
-        .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 8px; }
-        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 4px; }
+        .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 12px; line-height: 1.4; }
+        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 4px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; }
         
-        .buy-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
+        .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
+        .buy-btn:active { transform: scale(0.97); }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
-        .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); }
+        .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-sizing: border-box; }
+        .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); outline: none; }
     </style>
 </head>
 <body>
@@ -57,12 +60,14 @@
         <a href="/?category=Стекла" class="nav-btn">✨ Защитные стекла</a>
     {% else %}
         <div class="cart-bar">
-            <button onclick="window.location.href='/'" style="background:none; border:none; font-size: 20px; color: var(--text);">⬅</button>
-            <button onclick="openCartModal()" class="nav-btn" style="width: auto; margin: 0;">🛒 <span id="cartCount">0</span></button>
+            <button onclick="window.location.href='/'" style="background:none; border:none; font-size: 20px; color: var(--text); cursor:pointer;">⬅</button>
+            <button onclick="openCartModal()" class="nav-btn" style="width: auto; margin: 0; padding: 10px 16px;">🛒 <span id="cartCount">0</span></button>
         </div>
         
         <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
         
+        <div class="category-title">Раздел: {{ category }}</div>
+
         {% for p in products %}
         <div class="product-card">
             {% if p.Фото %}
@@ -85,11 +90,11 @@
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
-            <div id="cartItemsList" style="margin-bottom: 15px;"></div>
+            <div id="cartItemsList" style="margin-bottom: 15px; font-size: 15px;"></div>
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
             <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
-            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:10px;">Закрыть</button>
+            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer; font-size:14px;">Закрыть</button>
         </div>
     </div>
 
@@ -101,6 +106,11 @@
         updateUI();
 
         function addToCart(title, price) { 
+            // Легкая вибрация при добавлении в корзину (если поддерживается устройством)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+
             cart.push({title, price}); 
             localStorage.setItem('cart', JSON.stringify(cart)); 
             updateUI(); 
@@ -110,7 +120,7 @@
         function openCartModal() {
             if(cart.length === 0) { alert('Корзина пуста'); return; }
             let list = document.getElementById('cartItemsList');
-            list.innerHTML = cart.map(i => `<div>${i.title} — ${i.price} грн</div>`).join('');
+            list.innerHTML = cart.map(i => `<div style="padding: 4px 0; border-bottom: 1px solid var(--hint);">${i.title} — <b>${i.price} грн</b></div>`).join('');
             document.getElementById('cartModal').style.display = 'flex';
         }
 
@@ -125,6 +135,9 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phone })
             }).then(() => { 
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
                 alert('Спасибо! Ваш заказ принят.'); 
                 localStorage.removeItem('cart'); 
                 cart=[]; updateUI(); closeModal(); tg.close(); 
