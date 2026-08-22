@@ -1,92 +1,156 @@
-from flask import Flask, render_template, request, jsonify
+import io
+import math
 import pandas as pd
+from flask import Flask, render_template, request, jsonify
 import requests
 
 app = Flask(__name__)
 
 # Замените на ваши данные
 TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
-ADMIN_CHAT_ID = "396778432"
+TELEGRAM_CHAT_ID = "396778432"
+
+# Ссылка на опубликованную CSV-таблицу Google Sheets
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"  # Вставьте сюда вашу ссылку
+
+
+def clean_val(val):
+    """Очищает значения от NaN для предотвращения ошибок jsonify"""
+    if val is None:
+        return "-"
+    if isinstance(val, float) and math.isnan(val):
+        return "-"
+    val_str = str(val).strip()
+    return val_str if val_str and val_str != "nan" else "-"
+
 
 def get_products():
-    csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
-    try:
-        df = pd.read_csv(csv_url)
-        df.columns = df.columns.str.strip()
-        return df.to_dict(orient="records")
-    except Exception as e:
-        print(f"Ошибка загрузки таблицы: {e}")
+    """Чтение продуктов напрямую по ссылке CSV_URL"""
+    if not CSV_URL or "http" not in CSV_URL:
         return []
 
-@app.route('/')
+    try:
+        # Загружаем свежие данные из Google Sheets по ссылке
+        response = requests.get(CSV_URL)
+        response.encoding = 'utf-8'
+
+        if response.status_code == 200:
+            csv_data = io.StringIO(response.text)
+            df = pd.read_csv(csv_data)
+            df = df.fillna("-")  # Заменяем все пустые ячейки (NaN)
+            products = df.to_dict(orient="records")
+            return products
+        else:
+            print(f"Ошибка загрузки CSV: статус {response.status_code}")
+            return []
+    except Exception as e:
+        print(f"Ошибка при чтении CSV по ссылке: {e}")
+        return []
+
+
+@app.route("/")
 def index():
+    category = request.args.get("category", "").strip()
+    search = request.args.get("search", "").strip().lower()
+
     products = get_products()
-    selected_category = request.args.get('category')
-    selected_brand = request.args.get('brand')
-    search_query = request.args.get('search', '').strip().lower()
-    
     filtered_products = []
-    if selected_category:
-        filtered_products = [p for p in products if str(p.get('Категория')).strip().lower() == selected_category.lower()]
-        
-        if selected_brand and selected_brand != 'all':
-            filtered_products = [p for p in filtered_products if selected_brand.lower() in str(p.get('Название')).lower()]
 
-        if search_query:
-            filtered_products = [
-                p for p in filtered_products 
-                if search_query in str(p.get('Название', '')).lower() or search_query in str(p.get('Описание', '')).lower()
-            ]
-
-    return render_template('index.html', products=filtered_products, category=selected_category, brand=selected_brand, search=search_query)
-
-@app.route('/api/accessories')
-def get_accessories():
-    model_query = request.args.get('model', '').strip().lower()
-    if not model_query:
-        return jsonify([])
-    
-    products = get_products()
-    matched = []
-    
-    # Категории аксессуаров, которые могут подходить к телефону
-    accessory_categories = ['чехлы', 'стекла', 'пленки']
-    
     for p in products:
-        cat = str(p.get('Категория', '')).strip().lower()
-        title = str(p.get('Название', '')).strip().lower()
-        
-        # Если товар относится к аксессуарам и содержит модель телефона в названии
-        if cat in accessory_categories and model_query in title:
-            matched.append(p)
-            
-    return jsonify(matched)
+        # Фильтрация по категории
+        p_cat = str(p.get("Категория", "")).strip().lower()
+        if category and category.lower() != "all":
+            if p_cat != category.lower():
+                continue
 
-@app.route('/order', methods=['POST'])
-def create_order():
-    data = request.json
-    items = data.get('items', [])
-    name = data.get('name')
-    phone = data.get('phone')
-    
-    # Считаем общую сумму
-    total_price = sum(float(str(i['price']).replace(' ', '')) for i in items)
-    items_text = "\n".join([f"• {i['title']} — {i['price']} грн" for i in items])
+        # Фильтрация по поисковому запросу
+        p_title = str(p.get("Название", "")).strip().lower()
+        if search and search not in p_title:
+            continue
 
-    message = (
-        f"🚨 **Новый заказ из корзины!**\n\n"
-        f"🛒 Товары:\n{items_text}\n\n"
-        f"💰 Итого: {total_price} грн\n\n"
-        f"👤 Покупатель: {name}\n"
-        f"📞 Телефон: {phone}"
+        filtered_products.append(p)
+
+    return render_template(
+        "index.html",
+        products=filtered_products,
+        category=category,
+        search=search,
     )
 
-    if TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_TOKEN != "ВАШ_ТОКЕН_БОТА":
+
+@app.route("/api/accessories")
+def get_accessories():
+    model_query = request.args.get("model", "").strip().lower()
+    if not model_query:
+        return jsonify([])
+
+    products = get_products()
+    matched = []
+
+    # Категории сопутствующих товаров
+    accessory_categories = [
+        "чехлы",
+        "стекла",
+        "пленки",
+        "чохлы",
+        "захисні стекла",
+        "плівки",
+    ]
+
+    for p in products:
+        cat = str(p.get("Категория", "")).strip().lower()
+        title = str(p.get("Название", "")).strip().lower()
+
+        # Если товар относится к аксессуарам и в его названии есть искомая модель
+        if cat in accessory_categories:
+            if model_query in title:
+                # Очищаем все поля объекта от NaN
+                clean_p = {k: clean_val(v) for k, v in p.items()}
+                matched.append(clean_p)
+
+    return jsonify(matched)
+
+
+@app.route("/order", methods=["POST"])
+def send_order():
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No data"}), 400
+
+    name = data.get("name", "Не указано")
+    phone = data.get("phone", "Не указан")
+    items = data.get("items", [])
+
+    if not items:
+        return jsonify({"status": "error", "message": "Cart is empty"}), 400
+
+    total_price = sum(float(i.get("price", 0)) for i in items)
+
+    items_text = ""
+    for idx, item in enumerate(items, 1):
+        items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
+
+    message = (
+        f"🛍️ <b>Новый заказ!</b>\n\n"
+        f"👤 <b>Имя:</b> {name}\n"
+        f"📞 <b>Телефон:</b> {phone}\n\n"
+        f"📋 <b>Товары:</b>\n{items_text}\n"
+        f"💰 <b>Итого:</b> {total_price} грн"
+    )
+
+    try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {"chat_id": ADMIN_CHAT_ID, "text": message, "parse_mode": "Markdown"}
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML",
+        }
         requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Ошибка при отправке в Telegram: {e}")
 
     return jsonify({"status": "success"})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
