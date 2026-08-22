@@ -56,13 +56,11 @@ def index():
     filtered_products = []
 
     for p in products:
-        # Фильтрация по категории
         p_cat = str(p.get("Категория", "")).strip().lower()
         if category and category.lower() != "all":
             if p_cat != category.lower():
                 continue
 
-        # Фильтрация по поисковому запросу
         p_title = str(p.get("Название", "")).strip().lower()
         if search and search not in p_title:
             continue
@@ -86,7 +84,6 @@ def get_accessories():
     products = get_products()
     matched = []
 
-    # Разделяем категории по типам
     glass_categories = ["стекла", "захисні стекла"]
     case_categories = ["чехлы", "чохлы"]
     film_categories = ["пленки", "плівки"]
