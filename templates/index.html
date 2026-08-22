@@ -44,6 +44,9 @@
 
         .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 6px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
         
+        /* Стили для выбора вариантов цены (пленки/стекла) */
+        .price-select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 10px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; outline: none; box-sizing: border-box; }
+
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
 
@@ -59,6 +62,7 @@
         <a href="/?category=телефоны" class="nav-btn">📱 Телефоны</a>
         <a href="/?category=Чехлы" class="nav-btn">🛡️ Чехлы</a>
         <a href="/?category=Стекла" class="nav-btn">✨ Защитные стекла</a>
+        <a href="/?category=Пленки" class="nav-btn">📜 Пленки</a>
     {% else %}
         <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px;">⬅ Назад к категориям</button>
         
@@ -90,8 +94,19 @@
             </div>
             {% endif %}
 
-            <div class="product-price">{{ p.Цена }} грн</div>
-            <button class="buy-btn" onclick="addToCart('{{ p.Название }}', {{ p.Цена }})">В корзину</button>
+            <!-- Если это категория пленок или стекол, делаем выбор вариантов цены -->
+            {% if category.lower() in ['пленки', 'стекла'] %}
+                <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
+                <select id="select-{{ loop.index }}" class="price-select">
+                    <option value="300">Стандарт — 300 грн</option>
+                    <option value="400">Премиум — 400 грн</option>
+                    <option value="500">Ультра / Бронь — 500 грн</option>
+                </select>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
+            {% else %}
+                <div class="product-price">{{ p.Цена }} грн</div>
+                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', {{ p.Цена }})">В корзину</button>
+            {% endif %}
         </div>
         {% endfor %}
     {% endif %}
@@ -135,18 +150,28 @@
         updateUI();
 
         function addToCart(title, price) { 
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            }
-
+            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
             updateUI(); 
             
-            let oldText = mainButton.text;
             mainButton.setText("✅ Добавлено в корзину!");
-            setTimeout(() => {
-                updateUI();
-            }, 1000);
+            setTimeout(() => { updateUI(); }, 1000);
+        }
+
+        // Функция для добавления товаров с выбранным из списка вариантом (для пленок/стекол)
+        function addWithOptions(baseTitle, selectId) {
+            let selectElement = document.getElementById(selectId);
+            let selectedPrice = selectElement.value;
+            let selectedText = selectElement.options[selectElement.selectedIndex].text;
+            
+            let fullTitle = `${baseTitle} (${selectedText.split('—')[0].trim()})`;
+            
+            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
+            cart.push({title: fullTitle, price: selectedPrice});
+            updateUI();
+
+            mainButton.setText("✅ Добавлено в корзину!");
+            setTimeout(() => { updateUI(); }, 1000);
         }
         
         function openCartModal() {
@@ -163,9 +188,7 @@
 
         function closeModal() { 
             document.getElementById('cartModal').style.display = 'none'; 
-            if (cart.length > 0) {
-                mainButton.show();
-            }
+            if (cart.length > 0) { mainButton.show(); }
         }
 
         function submitOrder() {
@@ -177,9 +200,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phone })
             }).then(() => { 
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
+                if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
                 alert('Спасибо! Ваш заказ принят.'); 
                 localStorage.removeItem('cart'); 
                 cart = []; 
