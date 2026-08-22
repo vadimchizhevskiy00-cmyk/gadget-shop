@@ -60,8 +60,18 @@
 
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); }
         .rec-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent); }
-        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
-        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; gap: 8px; }
+        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+
+        /* Блок рекомендаций прямо под карточкой товара */
+        .product-recommendations {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 12px;
+            border: 1px dashed var(--accent);
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -109,7 +119,7 @@
                 <select id="select-{{ loop.index }}" class="price-select">
                     <option value="400">Матовая — 400 грн</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
+                <button class="buy-btn" onclick="addPhoneWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', 'rec-container-{{ loop.index }}')">В корзину</button>
             {% elif '-' in p.Цена|string %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант (глянцевая):</div>
                 <select id="select-{{ loop.index }}" class="price-select">
@@ -117,11 +127,17 @@
                     <option value="400">400 грн — Антиблик</option>
                     <option value="500">500 грн — Антиблик / Самовосстановление</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
+                <button class="buy-btn" onclick="addPhoneWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', 'rec-container-{{ loop.index }}')">В корзину</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
-                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
+                <button class="buy-btn" onclick="addPhoneSimple('{{ p.Название }}', '{{ p.Цена }}', 'rec-container-{{ loop.index }}')">В корзину</button>
             {% endif %}
+
+            <!-- Блок сопутствующих товаров под карточкой -->
+            <div id="rec-container-{{ loop.index }}" class="product-recommendations">
+                <div class="rec-title">✨ С этим товаром часто берут:</div>
+                <div class="rec-items-list"></div>
+            </div>
         </div>
         {% endfor %}
     {% endif %}
@@ -131,23 +147,6 @@
             <h3>Ваш заказ</h3>
             <div id="cartItemsList" style="margin-bottom: 10px; font-size: 15px;"></div>
             
-            <!-- Блок рекомендаций аксессуаров (появляется, если в корзине есть телефон) -->
-            <div id="recommendationsContainer" style="display: none;" class="recommendation-box">
-                <div class="rec-title">💡 Добавить к телефону со скидкой/аксессуар:</div>
-                <div class="rec-item">
-                    <span>🛡️ Защитное стекло</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Защитное стекло', '250')">+ 250 грн</button>
-                </div>
-                <div class="rec-item">
-                    <span>📜 Глянцевая пленка (Стандарт)</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Глянцевая пленка (Стандарт)', '300')">+ 300 грн</button>
-                </div>
-                <div class="rec-item">
-                    <span>📱 Силиконовый чехол</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Силиконовый чехол', '200')">+ 200 грн</button>
-                </div>
-            </div>
-
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
             <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
@@ -183,36 +182,62 @@
         }
         updateUI();
 
-        function addToCart(title, price) { 
+        // Добавление обычного товара и показ аксессуаров для него
+        function addPhoneSimple(title, price, recContainerId) {
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
             updateUI(); 
             
-            mainButton.setText("✅ Добавлено в корзину!");
-            setTimeout(() => { updateUI(); }, 1000);
+            showAccessoriesForProduct(title, recContainerId);
         }
 
-        function addWithOptions(baseTitle, selectId) {
+        // Добавление товара с селектом и показ аксессуаров
+        function addPhoneWithOptions(baseTitle, selectId, recContainerId) {
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
             let selectedText = selectElement.options[selectElement.selectedIndex].text;
-            
             let fullTitle = `${baseTitle} (${selectedText})`;
             
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: fullTitle, price: selectedPrice});
             updateUI();
 
-            mainButton.setText("✅ Добавлено в корзину!");
-            setTimeout(() => { updateUI(); }, 1000);
+            showAccessoriesForProduct(baseTitle, recContainerId);
         }
 
-        // Быстрое добавление аксессуара из рекомендаций в корзину
-        function addAccessory(title, price) {
+        // Добавление аксессуара из блока под карточкой товара
+        function addAccessoryFromCard(title, price) {
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: title, price: price});
             updateUI();
-            openCartModal(); // Переоткрываем, чтобы обновить общую сумму
+        }
+
+        // Запрос аксессуаров с бэкенда по модели товара
+        function showAccessoriesForProduct(productTitle, containerId) {
+            let words = productTitle.split(' ');
+            let searchModel = words.slice(0, 2).join(' ').toLowerCase(); 
+
+            fetch(`/api/accessories?model=${encodeURIComponent(searchModel)}`)
+                .then(res => res.json())
+                .then(accessories => {
+                    let container = document.getElementById(containerId);
+                    if (!container) return;
+                    let listDiv = container.querySelector('.rec-items-list');
+                    
+                    if (accessories && accessories.length > 0) {
+                        listDiv.innerHTML = accessories.map(acc => `
+                            <div class="rec-item">
+                                <span>${acc.Название} — <b>${acc.Цена} грн</b></span>
+                                <button class="add-rec-btn" onclick="addAccessoryFromCard('${acc.Название}', '${acc.Цена}')">+ Добавить</button>
+                            </div>
+                        `).join('');
+                        container.style.display = 'block';
+                    } else {
+                        container.style.display = 'none';
+                    }
+                }).catch(() => {
+                    // Если бэкенд не вернул данные, оставляем блок скрытым
+                });
         }
         
         function removeFromCart(index) {
@@ -234,20 +259,6 @@
                     <button class="delete-btn" onclick="removeFromCart(${index})" title="Удалить">✕</button>
                 </div>
             `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
-            
-            // Проверяем, есть ли в корзине телефон (по ключевым словам в названии товара)
-            let hasPhone = cart.some(item => {
-                let t = item.title.toLowerCase();
-                return t.includes('iphone') || t.includes('samsung') || t.includes('xiaomi') || t.includes('смартфон') || t.includes('телефон');
-            });
-
-            // Показываем блок рекомендаций, если покупают телефон
-            let recBox = document.getElementById('recommendationsContainer');
-            if (hasPhone) {
-                recBox.style.display = 'block';
-            } else {
-                recBox.style.display = 'none';
-            }
 
             document.getElementById('cartModal').style.display = 'flex';
             mainButton.hide();
@@ -260,7 +271,6 @@
 
         function submitOrder() {
             let name = document.getElementById('clientName').value;
-            let phone = document.getElementById('clientPhone5') || document.getElementById('clientPhone').value;
             let phoneInput = document.getElementById('clientPhone').value;
             
             if(!name || !phoneInput) { alert('Введите имя и телефон!'); return; }
