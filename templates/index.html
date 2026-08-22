@@ -3,191 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Магазин техники</title>
+    <title>Telegram Store</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: var(--tg-theme-bg-color, #f4f4f5);
-            --text-color: var(--tg-theme-text-color, #222);
-            --hint-color: var(--tg-theme-hint-color, #888);
-            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-            --button-color: var(--tg-theme-button-color, #2481cc);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
             margin: 0;
-            padding: 10px 10px 80px 10px;
-        }
-
-        h1, h2 {
-            text-align: center;
-            font-size: 20px;
-            margin: 10px 0;
-        }
-
-        /* Поиск и категории */
-        .search-box {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .search-box input {
-            flex-grow: 1;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            background: var(--card-bg);
-            color: var(--text-color);
-            outline: none;
-        }
-        .search-box button {
-            padding: 10px 16px;
-            border-radius: 10px;
-            border: none;
-            background: var(--button-color);
-            color: var(--button-text);
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .categories {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-            scrollbar-width: none;
-        }
-        .categories::-webkit-scrollbar { display: none; }
-        .cat-btn {
-            padding: 6px 14px;
-            border-radius: 20px;
-            background: var(--card-bg);
-            border: 1px solid #ddd;
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-        .cat-btn.active {
-            background: var(--button-color);
-            color: var(--button-text);
-            border-color: transparent;
-        }
-
-        /* Сетка товаров */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .product-card {
-            background: var(--card-bg);
-            border-radius: 12px;
             padding: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .product-card img {
+        .product {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .product img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        button {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
             width: 100%;
-            height: 120px;
-            object-fit: contain;
-            margin-bottom: 8px;
-            border-radius: 6px;
+            margin-top: 5px;
         }
-        .product-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            height: 32px;
-        }
-        .product-price {
-            font-size: 14px;
-            font-weight: bold;
-            color: var(--button-color);
-            margin-bottom: 8px;
-        }
-        .buy-btn {
+        select {
             width: 100%;
             padding: 8px;
-            border-radius: 8px;
-            border: none;
-            background: var(--button-color);
-            color: var(--button-text);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-        .options-select {
-            width: 100%;
-            padding: 6px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-
-        /* Модальное окно корзины */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
             justify-content: center;
-            align-items: flex-end;
-            z-index: 1000;
+            align-items: center;
         }
         .modal-content {
-            background: var(--card-bg);
-            width: 100%;
-            max-height: 90vh;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
+            background: var(--tg-theme-bg-color, #ffffff);
             padding: 20px;
-            box-sizing: border-box;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            max-height: 80vh;
             overflow-y: auto;
         }
         .cart-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            font-size: 13px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
         }
         .delete-btn {
-            background: none;
+            background: #ff4d4d;
+            color: white;
             border: none;
-            color: #ff5b5b;
-            font-size: 16px;
+            padding: 5px 10px;
+            border-radius: 3px;
             cursor: pointer;
-            padding: 0 5px;
+            width: auto;
+            margin: 0;
         }
-        
-        /* Блок рекомендаций аксессуаров */
+        .categories {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+        .cat-btn {
+            padding: 5px 10px;
+            background: #eee;
+            border-radius: 5px;
+            text-decoration: none;
+            color: black;
+            white-space: nowrap;
+        }
+        .cat-btn.active {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        .search-box {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .search-box input {
+            flex-grow: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .search-box button {
+            width: auto;
+            margin: 0;
+        }
+
+        /* Стили для блока рекомендаций в модальном окне */
         .recommendations-box {
             margin-top: 15px;
             padding-top: 10px;
-            border-top: 2px dashed rgba(0,0,0,0.1);
+            border-top: 2px dashed #ccc;
         }
         .rec-title {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 8px;
-            color: var(--button-color);
+            color: var(--tg-theme-button-color, #2481cc);
         }
         .rec-item {
             display: flex;
@@ -195,46 +129,20 @@
             align-items: center;
             background: rgba(0,0,0,0.03);
             padding: 8px;
-            border-radius: 8px;
+            border-radius: 5px;
             margin-bottom: 6px;
             font-size: 12px;
         }
         .add-rec-btn {
-            background: var(--button-color);
-            color: var(--button-text);
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
             padding: 4px 8px;
-            border-radius: 6px;
+            border-radius: 3px;
             cursor: pointer;
             font-size: 11px;
-            font-weight: bold;
-        }
-
-        .checkout-form {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .checkout-form input {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 13px;
-            background: var(--bg-color);
-            color: var(--text-color);
-            outline: none;
-        }
-        .submit-btn {
-            background: #28a745;
-            color: #fff;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 5px;
+            width: auto;
+            margin: 0;
         }
     </style>
 </head>
@@ -242,7 +150,7 @@
 
     <!-- Поиск -->
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Поиск товаров..." value="{{ search_query }}">
+        <input type="text" id="searchInput" placeholder="Поиск..." value="{{ search_query }}">
         <button onclick="applyFilters()">Найти</button>
     </div>
 
@@ -255,28 +163,26 @@
     </div>
 
     <!-- Список товаров -->
-    <div class="products-grid">
+    <div id="products-list">
         {% for p in products %}
-        <div class="product-card">
-            <div>
-                {% if p.Фото %}
-                <img src="{{ p.Фото }}" alt="{{ p.Название }}">
-                {% endif %}
-                <div class="product-title">{{ p.Название }}</div>
-                <div class="product-price">{{ p.Цена }} грн</div>
-            </div>
-            <div>
-                {% if p.variants %}
-                <select class="options-select" id="opt-{{ loop.index }}">
-                    {% for v in p.variants %}
-                    <option value="{{ v.price }}">{{ v.name }} - {{ v.price }} грн</option>
-                    {% endfor %}
-                </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'opt-{{ loop.index }}')">В корзину</button>
-                {% else %}
-                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
-                {% endif %}
-            </div>
+        <div class="product">
+            {% if p.Фото %}
+            <img src="{{ p.Фото }}" alt="{{ p.Название }}">
+            {% endif %}
+            <h3>{{ p.Название }}</h3>
+            <p>{{ p.Описание }}</p>
+            <p><b>Цена: {{ p.Цена }} грн</b></p>
+            
+            {% if p.variants %}
+            <select id="opt-{{ loop.index }}">
+                {% for v in p.variants %}
+                <option value="{{ v.price }}">{{ v.name }} - {{ v.price }} грн</option>
+                {% endfor %}
+            </select>
+            <button onclick="addWithOptions('{{ p.Название }}', 'opt-{{ loop.index }}')">В корзину</button>
+            {% else %}
+            <button onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -284,21 +190,21 @@
     <!-- Модальное окно корзины -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
-            <h2>Ваша корзина</h2>
+            <h2>Корзина</h2>
             <div id="cartItemsList"></div>
-
+            
             <!-- Блок подбора аксессуаров -->
             <div class="recommendations-box" id="recommendationsContainer" style="display: none;">
                 <div class="rec-title">⚡ Рекомендуем к вашему устройству:</div>
                 <div id="recItemsList"></div>
             </div>
 
-            <div class="checkout-form">
-                <input type="text" id="clientName" placeholder="Ваше имя">
-                <input type="tel" id="clientPhone" placeholder="Номер телефона">
-                <button class="submit-btn" onclick="submitOrder()">Подтвердить заказ</button>
+            <div style="margin-top: 15px;">
+                <input type="text" id="clientName" placeholder="Ваше имя" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box;">
+                <input type="tel" id="clientPhone" placeholder="Номер телефона" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box;">
+                <button onclick="submitOrder()" style="background-color: #28a745;">Оформить заказ</button>
             </div>
-            <button onclick="closeModal()" style="width:1px;height:1px;opacity:0;border:none;background:none;"></button>
+            <button onclick="closeModal()" style="background-color: #6c757d; margin-top: 5px;">Закрыть</button>
         </div>
     </div>
 
@@ -308,9 +214,7 @@
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
         let mainButton = tg.MainButton;
-        mainButton.setText("🛒 Корзина пуста");
-        mainButton.color = tg.themeParams.button_color || "#2481cc";
-        mainButton.textColor = tg.themeParams.button_text_color || "#ffffff";
+        mainButton.setText("🛒 Корзина");
         
         Telegram.WebApp.onEvent('mainButtonClicked', function(){
             openCartModal();
@@ -331,38 +235,27 @@
         updateUI();
 
         function addToCart(title, price) { 
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
             updateUI(); 
-            
-            mainButton.setText("✅ Добавлено в корзину!");
-            setTimeout(() => { updateUI(); }, 1000);
         }
 
         function addWithOptions(baseTitle, selectId) {
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
             let selectedText = selectElement.options[selectElement.selectedIndex].text;
-            
             let fullTitle = `${baseTitle} (${selectedText})`;
             
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: fullTitle, price: selectedPrice});
             updateUI();
-
-            mainButton.setText("✅ Добавлено в корзину!");
-            setTimeout(() => { updateUI(); }, 1000);
         }
 
         function addAccessory(title, price) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: title, price: price});
             updateUI();
-            openCartModal();
+            openCartModal(); // Обновляем модальное окно после добавления аксессуара
         }
         
         function removeFromCart(index) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('medium'); }
             cart.splice(index, 1);
             updateUI();
             openCartModal();
@@ -375,15 +268,15 @@
             
             list.innerHTML = cart.map((i, index) => `
                 <div class="cart-item">
-                    <span style="flex-grow: 1; word-break: break-word;">${i.title}</span>
-                    <b style="white-space: nowrap;">${i.price} грн</b>
-                    <button class="delete-btn" onclick="removeFromCart(${index})" title="Удалить">✕</button>
+                    <span>${i.title} - <b>${i.price} грн</b></span>
+                    <button class="delete-btn" onclick="removeFromCart(${index})">X</button>
                 </div>
-            `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
+            `).join('') + `<div style="margin-top: 10px; font-weight: bold;">Итого: ${totalPrice} грн</div>`;
             
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
 
+            // Берем первый товар из корзины для подбора чехлов/стекол
             let firstItem = cart[0];
             if (firstItem) {
                 let words = firstItem.title.split(' ');
@@ -395,11 +288,8 @@
                         if (accessories && accessories.length > 0) {
                             recList.innerHTML = accessories.map(acc => `
                                 <div class="rec-item">
-                                    <span>${acc.Название}</span>
-                                    <div>
-                                        <b style="font-size:12px; margin-right:4px;">${acc.Цена} грн</b>
-                                        <button class="add-rec-btn" onclick="addAccessory('${acc.Название}', '${acc.Цена}')">+ В корзину</button>
-                                    </div>
+                                    <span>${acc.Название} (${acc.Цена} грн)</span>
+                                    <button class="add-rec-btn" onclick="addAccessory('${acc.Название}', '${acc.Цена}')">+ В корзину</button>
                                 </div>
                             `).join('');
                             recBox.style.display = 'block';
@@ -431,8 +321,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phone })
             }).then(() => { 
-                if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
-                alert('Спасибо! Ваш заказ принят.'); 
+                alert('Заказ оформлен!'); 
                 localStorage.removeItem('cart'); 
                 cart = []; 
                 updateUI(); 
