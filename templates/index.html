@@ -14,6 +14,7 @@
             --hint: rgba(128, 128, 128, 0.2);
             --red: #ff3b30;
             --green: #34c759;
+            --orange: #ff9500;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; padding-bottom: 70px; }
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
@@ -24,8 +25,28 @@
         
         .category-title { font-size: 13px; opacity: 0.6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 
-        .product-card { background: var(--secondary); padding: 16px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        /* Карточка товара с поддержкой бейджа */
+        .product-card { position: relative; background: var(--secondary); padding: 16px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         
+        /* Стили бейджей (Хит / New / Скидка) */
+        .badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
+        .badge-hit { background: var(--red); }
+        .badge-new { background: var(--green); }
+        .badge-sale { background: var(--orange); }
+
         .product-img { 
             width: 100%; 
             height: 200px; 
@@ -58,7 +79,7 @@
         .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
 
-        /* Блок рекомендаций внутри модального окна */
+        /* Блок рекомендаций */
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
         .phone-group-title { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 3px; }
         .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
@@ -82,6 +103,20 @@
 
         {% for p in products %}
         <div class="product-card">
+            <!-- Отображение бейджей -->
+            {% if p.Статус and p.Статус != '-' %}
+                {% set st = p.Статус|string|lower %}
+                {% if 'хит' in st or 'hit' in st or 'top' in st %}
+                    <div class="badge badge-hit">🔥 ХИТ</div>
+                {% elif 'new' in st or 'нов' in st %}
+                    <div class="badge badge-new">✨ NEW</div>
+                {% elif 'скидк' in st or 'sale' in st or '%' in st %}
+                    <div class="badge badge-sale">🏷️ {{ p.Статус }}</div>
+                {% else %}
+                    <div class="badge badge-hit">{{ p.Статус }}</div>
+                {% endif %}
+            {% endif %}
+
             {% if p.Фото %}
             <img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">
             {% endif %}
@@ -132,14 +167,12 @@
             <h3>Ваш заказ</h3>
             <div id="cartItemsList" style="margin-bottom: 10px; font-size: 15px;"></div>
             
-            <!-- Блок сопутствующих товаров -->
             <div id="recommendationsContainer" class="recommendation-box">
                 <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Добавьте к вашим устройствам:</div>
                 <div id="recItemsList"></div>
             </div>
 
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
-            <!-- Маска номера телефона -->
             <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
             <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer; font-size:14px;">Закрыть</button>
@@ -159,26 +192,21 @@
             openCartModal();
         });
 
-        // Функция маски телефона +380 XX XXX XX XX
         function formatPhone(input) {
             let prefix = "+380 ";
             let value = input.value;
 
-            // Не даем стереть префикс +380
             if (!value.startsWith(prefix)) {
                 input.value = prefix;
                 return;
             }
 
-            // Оставляем только цифры после +380
             let digits = value.slice(prefix.length).replace(/\D/g, '');
 
-            // Ограничиваем ввод максимум 9 цифрами
             if (digits.length > 9) {
                 digits = digits.substring(0, 9);
             }
 
-            // Форматируем в красивый вид (например: +380 67 123 45 67)
             let formatted = prefix;
             if (digits.length > 0) {
                 formatted += digits.substring(0, 2);
@@ -350,8 +378,6 @@
         function submitOrder() {
             let name = document.getElementById('clientName').value.trim();
             let phoneInput = document.getElementById('clientPhone').value.trim();
-            
-            // Получаем только чистые цифры без префикса +380
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
 
             if (!name) { 
@@ -359,7 +385,6 @@
                 return; 
             }
             
-            // Проверка: должно быть введено ровно 9 цифр после +380
             if (digitsOnly.length !== 9) { 
                 alert('Пожалуйста, введите корректный номер телефона (9 цифр после +380)!'); 
                 return; 
