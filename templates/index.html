@@ -241,14 +241,19 @@
                 </div>
             `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
 
-            // Подтягиваем сопутствующие аксессуары по модели первого товара в корзине
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
-            let firstItem = cart[0];
+            
+            // Ищем любой телефон в корзине
+            let phoneItem = cart.find(item => {
+                let t = item.title.toLowerCase();
+                return t.includes('samsung') || t.includes('iphone') || t.includes('xiaomi') || t.includes('a17');
+            }) || cart[0];
 
-            if (firstItem) {
-                let words = firstItem.title.split(' ');
-                let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
+            if (phoneItem) {
+                // Извлекаем название модели (например, из "Samsung A17" берем "A17" или "Samsung A17")
+                let titleWords = phoneItem.title.split(' ');
+                let searchModel = titleWords.length > 1 ? titleWords[1] : titleWords[0]; 
 
                 fetch(`/api/accessories?model=${encodeURIComponent(searchModel.toLowerCase())}`)
                     .then(res => res.json())
@@ -275,7 +280,6 @@
             document.getElementById('cartModal').style.display = 'flex';
             mainButton.hide();
         }
-
         function closeModal() { 
             document.getElementById('cartModal').style.display = 'none'; 
             if (cart.length > 0) { mainButton.show(); }
