@@ -39,7 +39,6 @@
         .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
         .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
         
-        /* Стили для тегов характеристик */
         .specs-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
         .spec-tag { font-size: 11px; opacity: 0.8; background: var(--bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--hint); }
 
@@ -81,13 +80,13 @@
             
             <div class="product-desc">{{ p.Описание }}</div>
 
-            <!-- Блок характеристик (показывается только если они заполнены в таблице) -->
             {% if category.lower() == 'телефоны' %}
             <div class="specs-container">
                 {% if p.Экран and p.Экран != '-' %}<div class="spec-tag">🖥️ {{ p.Экран }}</div>{% endif %}
                 {% if p.Камера and p.Камера != '-' %}<div class="spec-tag">📸 {{ p.Камера }}</div>{% endif %}
                 {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
-                {% if p.Процессор and p.Процессор != '-' %}<div class="spec-tag">⚡ {{ p.Процессор }}</div>{% endif %}
+                {% if p.Мощность and p.Мощность != '-' %}<div class="spec-tag">⚡ {{ p.Мощность }}</div>{% endif %}
+                {% if p.Процессор and p.Процессор != '-' %}<div class="spec-tag">⚙️ {{ p.Процессор }}</div>{% endif %}
             </div>
             {% endif %}
 
@@ -97,7 +96,6 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Модальное окно заказа -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
@@ -171,8 +169,8 @@
         }
 
         function submitOrder() {
-            let name = document.getElementById('clientName', '').value;
-            let phone = document.getElementById('clientPhone', '').value;
+            let name = document.getElementById('clientName').value;
+            let phone = document.getElementById('clientPhone').value;
             if(!name || !phone) { alert('Введите имя и телефон!'); return; }
             
             fetch('/order', {
