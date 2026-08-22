@@ -44,7 +44,6 @@
 
         .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 6px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
         
-        /* Стили для выбора вариантов цены (пленки/стекла) */
         .price-select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 10px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; outline: none; box-sizing: border-box; }
 
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
@@ -94,18 +93,18 @@
             </div>
             {% endif %}
 
-            <!-- Если это категория пленок или стекол, делаем выбор вариантов цены -->
-            {% if category.lower() in ['пленки', 'стекла'] %}
+            <!-- Динамическая проверка цены: если есть дефис (диапазон), делаем селект, иначе обычная цена -->
+            {% if '-' in p.Цена|string %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
                 <select id="select-{{ loop.index }}" class="price-select">
-                    <option value="300">Стандарт — 300 грн</option>
-                    <option value="400">Премиум — 400 грн</option>
-                    <option value="500">Ультра / Бронь — 500 грн</option>
+                    {% for price_opt in p.Цена.split('-') %}
+                        <option value="{{ price_opt.strip() }}">Вариант — {{ price_opt.strip() }} грн</option>
+                    {% endfor %}
                 </select>
                 <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
-                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', {{ p.Цена }})">В корзину</button>
+                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
             {% endif %}
         </div>
         {% endfor %}
@@ -158,16 +157,12 @@
             setTimeout(() => { updateUI(); }, 1000);
         }
 
-        // Функция для добавления товаров с выбранным из списка вариантом (для пленок/стекол)
         function addWithOptions(baseTitle, selectId) {
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
-            let selectedText = selectElement.options[selectElement.selectedIndex].text;
-            
-            let fullTitle = `${baseTitle} (${selectedText.split('—')[0].trim()})`;
             
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
-            cart.push({title: fullTitle, price: selectedPrice});
+            cart.push({title: baseTitle, price: selectedPrice});
             updateUI();
 
             mainButton.setText("✅ Добавлено в корзину!");
