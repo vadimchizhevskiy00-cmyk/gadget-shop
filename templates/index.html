@@ -13,7 +13,6 @@
             --secondary: var(--tg-theme-secondary-bg-color, #f4f4f4);
             --hint: rgba(128, 128, 128, 0.2);
             --red: #ff3b30;
-            --green: #34c759;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; padding-bottom: 70px; }
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
@@ -60,8 +59,8 @@
 
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); }
         .rec-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent); }
-        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
-        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; gap: 8px; border-bottom: 1px solid var(--hint); padding-bottom: 6px; }
+        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -103,7 +102,6 @@
             </div>
             {% endif %}
 
-            <!-- Логика выбора для пленок и диапазона цен -->
             {% if 'матовая' in p.Название.lower() %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
                 <select id="select-{{ loop.index }}" class="price-select">
@@ -131,21 +129,10 @@
             <h3>Ваш заказ</h3>
             <div id="cartItemsList" style="margin-bottom: 10px; font-size: 15px;"></div>
             
-            <!-- Блок рекомендаций аксессуаров (появляется, если в корзине есть телефон) -->
+            <!-- Блок динамических рекомендаций аксессуаров -->
             <div id="recommendationsContainer" style="display: none;" class="recommendation-box">
-                <div class="rec-title">💡 Добавить к телефону со скидкой/аксессуар:</div>
-                <div class="rec-item">
-                    <span>🛡️ Защитное стекло</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Защитное стекло', '250')">+ 250 грн</button>
-                </div>
-                <div class="rec-item">
-                    <span>📜 Глянцевая пленка (Стандарт)</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Глянцевая пленка (Стандарт)', '300')">+ 300 грн</button>
-                </div>
-                <div class="rec-item">
-                    <span>📱 Силиконовый чехол</span>
-                    <button class="add-rec-btn" onclick="addAccessory('Силиконовый чехол', '200')">+ 200 грн</button>
-                </div>
+                <div class="rec-title">🎯 Подходящие аксессуары к вашему телефону:</div>
+                <div id="recItemsList"></div>
             </div>
 
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
@@ -207,12 +194,11 @@
             setTimeout(() => { updateUI(); }, 1000);
         }
 
-        // Быстрое добавление аксессуара из рекомендаций в корзину
         function addAccessory(title, price) {
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: title, price: price});
             updateUI();
-            openCartModal(); // Переоткрываем, чтобы обновить общую сумму
+            openCartModal();
         }
         
         function removeFromCart(index) {
@@ -235,16 +221,39 @@
                 </div>
             `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
             
-            // Проверяем, есть ли в корзине телефон (по ключевым словам в названии товара)
-            let hasPhone = cart.some(item => {
+            // Ищем телефон в корзине и выделяем поисковый запрос по модели (например, "iphone 15")
+            let phoneItem = cart.find(item => {
                 let t = item.title.toLowerCase();
                 return t.includes('iphone') || t.includes('samsung') || t.includes('xiaomi') || t.includes('смартфон') || t.includes('телефон');
             });
 
-            // Показываем блок рекомендаций, если покупают телефон
             let recBox = document.getElementById('recommendationsContainer');
-            if (hasPhone) {
-                recBox.style.display = 'block';
+            let recList = document.getElementById('recItemsList');
+
+            if (phoneItem) {
+                let phoneWords = phoneItem.title.split(' ');
+                let searchModel = phoneWords.slice(0, 2).join(' ').toLowerCase(); 
+
+                fetch(`/api/accessories?model=${encodeURIComponent(searchModel)}`)
+                    .then(res => res.json())
+                    .then(accessories => {
+                        if (accessories && accessories.length > 0) {
+                            recList.innerHTML = accessories.map(acc => `
+                                <div class="rec-item">
+                                    <span>${acc.Название}</span>
+                                    <div>
+                                        <b style="font-size:12px; margin-right:4px;">${acc.Цена} грн</b>
+                                        <button class="add-rec-btn" onclick="addAccessory('${acc.Название}', '${acc.Цена}')">+ В корзину</button>
+                                    </div>
+                                </div>
+                            `).join('');
+                            recBox.style.display = 'block';
+                        } else {
+                            recBox.style.display = 'none';
+                        }
+                    }).catch(() => {
+                        recBox.style.display = 'none';
+                    });
             } else {
                 recBox.style.display = 'none';
             }
@@ -260,14 +269,12 @@
 
         function submitOrder() {
             let name = document.getElementById('clientName').value;
-            let phone = document.getElementById('clientPhone5') || document.getElementById('clientPhone').value;
-            let phoneInput = document.getElementById('clientPhone').value;
-            
-            if(!name || !phoneInput) { alert('Введите имя и телефон!'); return; }
+            let phone = document.getElementById('clientPhone').value;
+            if(!name || !phone) { alert('Введите имя и телефон!'); return; }
             
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ items: cart, name: name, phone: phoneInput })
+                body: JSON.stringify({ items: cart, name: name, phone: phone })
             }).then(() => { 
                 if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
                 alert('Спасибо! Ваш заказ принят.'); 
