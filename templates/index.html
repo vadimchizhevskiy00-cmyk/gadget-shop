@@ -60,7 +60,7 @@
 
         /* Блок рекомендаций внутри модального окна */
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
-        .rec-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent); }
+        .phone-group-title { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 3px; }
         .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
         .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     </style>
@@ -134,7 +134,7 @@
             
             <!-- Блок сопутствующих товаров -->
             <div id="recommendationsContainer" class="recommendation-box">
-                <div class="rec-title">✨ Добавьте к вашему телефону:</div>
+                <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Добавьте к вашим устройствам:</div>
                 <div id="recItemsList"></div>
             </div>
 
@@ -172,7 +172,6 @@
         }
         updateUI();
 
-        // Тихое добавление в корзину с индикатором
         function addToCart(title, price, btnElement) { 
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
@@ -226,8 +225,8 @@
             }
         }
 
-        // Вызывается ТОЛЬКО по нажатию на нижнюю синюю кнопку Telegram
-        function openCartModal() {
+        // Подбор рекомендаций ДЛЯ ВСЕХ телефонов в корзине
+        async function openCartModal() {
             if(cart.length === 0) { return; }
             let list = document.getElementById('cartItemsList');
             let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
@@ -242,48 +241,60 @@
 
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
-            let recTitle = recBox ? recBox.querySelector('.rec-title') : null;
 
-            let phoneItem = cart.find(item => {
+            // Находим все уникальные телефоны в корзине
+            let phoneItems = cart.filter(item => {
                 let t = item.title.toLowerCase();
-                return t.includes('samsung') || t.includes('iphone') || t.includes('xiaomi') || t.includes('a17');
-            }) || cart[0];
+                return t.includes('samsung') || t.includes('iphone') || t.includes('xiaomi') || t.includes('a17') || t.includes('телефон') || t.includes('смартфон');
+            });
 
-            if (phoneItem) {
-                let words = phoneItem.title.split(' ');
+            // Формируем уникальный список поисковых моделей (чтобы не запрашивать одинаковые)
+            let uniqueModels = [];
+            phoneItems.forEach(item => {
+                let words = item.title.split(' ');
                 let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
+                let cleanModel = searchModel.trim().toLowerCase();
+                if (!uniqueModels.some(m => m.clean === cleanModel)) {
+                    uniqueModels.push({ raw: searchModel, clean: cleanModel });
+                }
+            });
 
-                fetch(`/api/accessories?model=${encodeURIComponent(searchModel.toLowerCase())}`)
-                    .then(res => res.json())
-                    .then(accessories => {
+            if (uniqueModels.length > 0) {
+                let htmlBuffer = '';
+                
+                // Запрашиваем аксессуары параллельно для всех выбранных моделей
+                for (let m of uniqueModels) {
+                    try {
+                        let res = await fetch(`/api/accessories?model=${encodeURIComponent(m.clean)}`);
+                        let accessories = await res.json();
+                        
                         if (accessories && accessories.length > 0) {
                             let hasGlass = accessories.some(acc => {
                                 let cat = (acc.Категория || '').toLowerCase();
                                 return cat.includes('стекл') || cat.includes('скл');
                             });
 
-                            if (recTitle) {
-                                if (hasGlass) {
-                                    recTitle.innerText = "✨ Добавьте к вашему телефону:";
-                                } else {
-                                    recTitle.innerText = "📜 Стекла нет в наличии. Предлагаем пленку:";
-                                }
-                            }
-
-                            recList.innerHTML = accessories.map(acc => `
+                            let headerText = hasGlass ? `К модели ${m.raw}:` : `К модели ${m.raw} (пленка вместо стекла):`;
+                            
+                            htmlBuffer += `<div class="phone-group-title">📱 ${headerText}</div>`;
+                            htmlBuffer += accessories.map(acc => `
                                 <div class="rec-item">
                                     <span>${acc.Название}</span>
                                     <button class="add-rec-btn" onclick="addAccessory('${acc.Название}', '${acc.Цена}')">+ ${acc.Цена} грн</button>
                                 </div>
                             `).join('');
-                            recBox.style.display = 'block';
-                        } else {
-                            recBox.style.display = 'none';
                         }
-                    })
-                    .catch(() => {
-                        recBox.style.display = 'none';
-                    });
+                    } catch (e) {
+                        console.error('Ошибка подгрузки для', m.raw, e);
+                    }
+                }
+
+                if (htmlBuffer) {
+                    recList.innerHTML = htmlBuffer;
+                    recBox.style.display = 'block';
+                } else {
+                    recBox.style.display = 'none';
+                }
             } else {
                 recBox.style.display = 'none';
             }
