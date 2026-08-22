@@ -10,24 +10,13 @@ from telebot import types
 
 app = Flask(__name__)
 
-# ==========================================
-# ⚙️ НАСТРОЙКИ (Укажите ваши данные)
-# ==========================================
 TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
 TELEGRAM_CHAT_ID = "396778432"
-
-# Ссылка на вашу опубликованную CSV-таблицу Google Sheets
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
-
-# Ваша прямая ссылка на сервис Render (например, https://my-shop.onrender.com)
 WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 
 
-# ==========================================
-# 🛠️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-# ==========================================
 def clean_val(val):
-    """Очищает значения от NaN для предотвращения ошибок jsonify"""
     if val is None:
         return "-"
     if isinstance(val, float) and math.isnan(val):
@@ -37,7 +26,6 @@ def clean_val(val):
 
 
 def get_products():
-    """Чтение продуктов напрямую по ссылке CSV_URL из Google Sheets"""
     if not CSV_URL or "http" not in CSV_URL:
         return []
 
@@ -52,16 +40,12 @@ def get_products():
             products = df.to_dict(orient="records")
             return products
         else:
-            print(f"Ошибка загрузки CSV: статус {response.status_code}")
             return []
     except Exception as e:
         print(f"Ошибка при чтении CSV по ссылке: {e}")
         return []
 
 
-# ==========================================
-# 🌐 МАРШРУТЫ FLASK (САЙТ/МИНИ-АПП)
-# ==========================================
 @app.route("/")
 def index():
     category = request.args.get("category", "").strip()
@@ -105,7 +89,6 @@ def get_accessories():
 
     has_glass = False
 
-    # 1. Поиск совпадений в Названии и в колонке Совместимость
     for p in products:
         cat = str(p.get("Категория", "")).strip().lower()
         title = str(p.get("Название", "")).strip().lower()
@@ -120,7 +103,6 @@ def get_accessories():
                 if clean_p not in matched:
                     matched.append(clean_p)
 
-    # 2. Если стекла для модели (или аналогов) нет — подтягиваем пленки
     if not has_glass:
         for p in products:
             cat = str(p.get("Категория", "")).strip().lower()
@@ -173,9 +155,6 @@ def send_order():
     return jsonify({"status": "success"})
 
 
-# ==========================================
-# 🤖 ТЕЛЕГРАМ БОТ (ВСТРОЕННЫЙ ФОНОВЫЙ ПРОЦЕСС)
-# ==========================================
 tb_bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
 
@@ -183,7 +162,6 @@ tb_bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 def start_cmd(message):
     web_app = types.WebAppInfo(url=WEB_APP_URL)
 
-    # 1. Инлайн-кнопка прямо под приветственным текстом
     inline_kb = types.InlineKeyboardMarkup()
     inline_kb.add(
         types.InlineKeyboardButton(
@@ -191,7 +169,6 @@ def start_cmd(message):
         )
     )
 
-    # 2. Нижняя зафиксированная кнопка
     reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     reply_kb.add(
         types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
@@ -203,7 +180,6 @@ def start_cmd(message):
         f"Натисніть кнопку нижче, щоб переглянути каталог та зробити замовлення 👇"
     )
 
-    # Отправляем сообщение
     tb_bot.send_message(
         message.chat.id, welcome_text, reply_markup=inline_kb
     )
@@ -216,15 +192,12 @@ def start_cmd(message):
 
 def run_bot():
     try:
-        print("Telegram-бот успешно запущен в фоновом режиме...")
         tb_bot.infinity_polling(none_stop=True)
     except Exception as e:
         print(f"Ошибка в фоновой работе бота: {e}")
 
 
-# Запускаем бота в отдельном фоновом потоке при старте Flask
 threading.Thread(target=run_bot, daemon=True).start()
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
