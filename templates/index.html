@@ -13,20 +13,17 @@
             --secondary: var(--tg-theme-secondary-bg-color, #f4f4f4);
             --hint: rgba(128, 128, 128, 0.2);
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; padding-bottom: 70px; }
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
         
         .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: none; background: var(--accent); color: white; font-weight: bold; text-align: center; text-decoration: none; box-sizing: border-box; cursor: pointer; }
-        .cart-bar { position: sticky; top: 0; padding: 10px 0; background: var(--bg); z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--secondary); }
         
         .search-input { width: 100%; padding: 12px; margin: 10px 0 15px 0; border-radius: 12px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; outline: none; }
         
         .category-title { font-size: 13px; opacity: 0.6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 
-        /* Карточка товара с мягкой тенью и скруглением */
         .product-card { background: var(--secondary); padding: 16px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         
-        /* Картинка без фона и рамок для вырезанных PNG */
         .product-img { 
             width: 100%; 
             height: 200px; 
@@ -40,8 +37,13 @@
         
         .product-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
         .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
-        .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 12px; line-height: 1.4; }
-        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 4px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; }
+        .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
+        
+        /* Стили для тегов характеристик */
+        .specs-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .spec-tag { font-size: 11px; opacity: 0.8; background: var(--bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--hint); }
+
+        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 6px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
         
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
@@ -59,10 +61,7 @@
         <a href="/?category=Чехлы" class="nav-btn">🛡️ Чехлы</a>
         <a href="/?category=Стекла" class="nav-btn">✨ Защитные стекла</a>
     {% else %}
-        <div class="cart-bar">
-            <button onclick="window.location.href='/'" style="background:none; border:none; font-size: 20px; color: var(--text); cursor:pointer;">⬅</button>
-            <button onclick="openCartModal()" class="nav-btn" style="width: auto; margin: 0; padding: 10px 16px;">🛒 <span id="cartCount">0</span></button>
-        </div>
+        <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px;">⬅ Назад к категориям</button>
         
         <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
         
@@ -77,16 +76,28 @@
             <div class="product-title">{{ p.Название }}</div>
             
             {% if category.lower() == 'телефоны' and p.Память and p.Память != '-' %}
-            <div class="memory-tag">Память: {{ p.Память }}</div>
+            <div class="memory-tag">💾 Память: {{ p.Память }}</div>
             {% endif %}
             
             <div class="product-desc">{{ p.Описание }}</div>
+
+            <!-- Блок характеристик (показывается только если они заполнены в таблице) -->
+            {% if category.lower() == 'телефоны' %}
+            <div class="specs-container">
+                {% if p.Экран and p.Экран != '-' %}<div class="spec-tag">🖥️ {{ p.Экран }}</div>{% endif %}
+                {% if p.Камера and p.Камера != '-' %}<div class="spec-tag">📸 {{ p.Камера }}</div>{% endif %}
+                {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
+                {% if p.Процессор and p.Процессор != '-' %}<div class="spec-tag">⚡ {{ p.Процессор }}</div>{% endif %}
+            </div>
+            {% endif %}
+
             <div class="product-price">{{ p.Цена }} грн</div>
-            <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}')">В корзину</button>
+            <button class="buy-btn" onclick="addToCart('{{ p.Название }}', {{ p.Цена }})">В корзину</button>
         </div>
         {% endfor %}
     {% endif %}
 
+    <!-- Модальное окно заказа -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
@@ -102,33 +113,66 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        function updateUI() { document.getElementById('cartCount').innerText = cart.length; }
+
+        let mainButton = tg.MainButton;
+        mainButton.setText("🛒 Корзина пуста");
+        mainButton.color = tg.themeParams.button_color || "#2481cc";
+        mainButton.textColor = tg.themeParams.button_text_color || "#ffffff";
+        
+        Telegram.WebApp.onEvent('mainButtonClicked', function(){
+            openCartModal();
+        });
+
+        function updateUI() {
+            let totalCount = cart.length;
+            if (totalCount > 0) {
+                let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
+                mainButton.setText(`🛒 Оформить заказ (${totalCount}) • ${totalPrice} грн`);
+                mainButton.show();
+            } else {
+                mainButton.hide();
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
         updateUI();
 
         function addToCart(title, price) { 
-            // Легкая вибрация при добавлении в корзину (если поддерживается устройством)
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('light');
             }
 
             cart.push({title, price}); 
-            localStorage.setItem('cart', JSON.stringify(cart)); 
             updateUI(); 
-            alert(title + ' добавлен в корзину!'); 
+            
+            let oldText = mainButton.text;
+            mainButton.setText("✅ Добавлено в корзину!");
+            setTimeout(() => {
+                updateUI();
+            }, 1000);
         }
         
         function openCartModal() {
             if(cart.length === 0) { alert('Корзина пуста'); return; }
             let list = document.getElementById('cartItemsList');
-            list.innerHTML = cart.map(i => `<div style="padding: 4px 0; border-bottom: 1px solid var(--hint);">${i.title} — <b>${i.price} грн</b></div>`).join('');
+            let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
+            
+            list.innerHTML = cart.map(i => `<div style="padding: 6px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between;"><span>${i.title}</span> <b>${i.price} грн</b></div>`).join('') + 
+                             `<div style="margin-top: 12px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
+            
             document.getElementById('cartModal').style.display = 'flex';
+            mainButton.hide();
         }
 
-        function closeModal() { document.getElementById('cartModal').style.display = 'none'; }
+        function closeModal() { 
+            document.getElementById('cartModal').style.display = 'none'; 
+            if (cart.length > 0) {
+                mainButton.show();
+            }
+        }
 
         function submitOrder() {
-            let name = document.getElementById('clientName').value;
-            let phone = document.getElementById('clientPhone').value;
+            let name = document.getElementById('clientName', '').value;
+            let phone = document.getElementById('clientPhone', '').value;
             if(!name || !phone) { alert('Введите имя и телефон!'); return; }
             
             fetch('/order', {
@@ -140,7 +184,10 @@
                 }
                 alert('Спасибо! Ваш заказ принят.'); 
                 localStorage.removeItem('cart'); 
-                cart=[]; updateUI(); closeModal(); tg.close(); 
+                cart = []; 
+                updateUI(); 
+                closeModal(); 
+                tg.close(); 
             });
         }
 
