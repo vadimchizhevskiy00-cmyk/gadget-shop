@@ -93,13 +93,19 @@
             </div>
             {% endif %}
 
-            <!-- Динамическая проверка цены: если есть дефис (диапазон), делаем селект, иначе обычная цена -->
-            {% if '-' in p.Цена|string %}
+            <!-- Логика выбора для пленок и диапазона цен -->
+            {% if 'матовая' in p.Название.lower() %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
                 <select id="select-{{ loop.index }}" class="price-select">
-                    {% for price_opt in p.Цена.split('-') %}
-                        <option value="{{ price_opt.strip() }}">Вариант — {{ price_opt.strip() }} грн</option>
-                    {% endfor %}
+                    <option value="400">Матовая — 400 грн</option>
+                </select>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
+            {% elif '-' in p.Цена|string %}
+                <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант (глянцевая):</div>
+                <select id="select-{{ loop.index }}" class="price-select">
+                    <option value="300">300 грн — Стандарт</option>
+                    <option value="400">400 грн — Антиблик</option>
+                    <option value="500">500 грн — Антиблик / Самовосстановление</option>
                 </select>
                 <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}')">В корзину</button>
             {% else %}
@@ -160,9 +166,12 @@
         function addWithOptions(baseTitle, selectId) {
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
+            let selectedText = selectElement.options[selectElement.selectedIndex].text;
+            
+            let fullTitle = `${baseTitle} (${selectedText})`;
             
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
-            cart.push({title: baseTitle, price: selectedPrice});
+            cart.push({title: fullTitle, price: selectedPrice});
             updateUI();
 
             mainButton.setText("✅ Добавлено в корзину!");
