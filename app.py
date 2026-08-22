@@ -40,6 +40,28 @@ def index():
 
     return render_template('index.html', products=filtered_products, category=selected_category, brand=selected_brand, search=search_query)
 
+@app.route('/api/accessories')
+def get_accessories():
+    model_query = request.args.get('model', '').strip().lower()
+    if not model_query:
+        return jsonify([])
+    
+    products = get_products()
+    matched = []
+    
+    # Категории аксессуаров, которые могут подходить к телефону
+    accessory_categories = ['чехлы', 'стекла', 'пленки']
+    
+    for p in products:
+        cat = str(p.get('Категория', '')).strip().lower()
+        title = str(p.get('Название', '')).strip().lower()
+        
+        # Если товар относится к аксессуарам и содержит модель телефона в названии
+        if cat in accessory_categories and model_query in title:
+            matched.append(p)
+            
+    return jsonify(matched)
+
 @app.route('/order', methods=['POST'])
 def create_order():
     data = request.json
@@ -59,7 +81,7 @@ def create_order():
         f"📞 Телефон: {phone}"
     )
 
-    if TELEGRAM_BOT_TOKEN != "ВАШ_ТОКЕН_БОТА":
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_TOKEN != "ВАШ_ТОКЕН_БОТА":
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {"chat_id": ADMIN_CHAT_ID, "text": message, "parse_mode": "Markdown"}
         requests.post(url, json=payload)
