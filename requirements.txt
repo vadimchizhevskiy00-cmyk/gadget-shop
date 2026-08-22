@@ -1,5 +1,6 @@
 Flask
-gspread
-requests
 pandas
+requests
+pyTelegramBotAPI
 gunicorn
+openpyxl
