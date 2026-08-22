@@ -139,7 +139,8 @@
             </div>
 
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
-            <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
+            <!-- Маска номера телефона -->
+            <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
             <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer; font-size:14px;">Закрыть</button>
         </div>
@@ -157,6 +158,43 @@
         Telegram.WebApp.onEvent('mainButtonClicked', function(){
             openCartModal();
         });
+
+        // Функция маски телефона +380 XX XXX XX XX
+        function formatPhone(input) {
+            let prefix = "+380 ";
+            let value = input.value;
+
+            // Не даем стереть префикс +380
+            if (!value.startsWith(prefix)) {
+                input.value = prefix;
+                return;
+            }
+
+            // Оставляем только цифры после +380
+            let digits = value.slice(prefix.length).replace(/\D/g, '');
+
+            // Ограничиваем ввод максимум 9 цифрами
+            if (digits.length > 9) {
+                digits = digits.substring(0, 9);
+            }
+
+            // Форматируем в красивый вид (например: +380 67 123 45 67)
+            let formatted = prefix;
+            if (digits.length > 0) {
+                formatted += digits.substring(0, 2);
+            }
+            if (digits.length >= 3) {
+                formatted += " " + digits.substring(2, 5);
+            }
+            if (digits.length >= 6) {
+                formatted += " " + digits.substring(5, 7);
+            }
+            if (digits.length >= 8) {
+                formatted += " " + digits.substring(7, 9);
+            }
+
+            input.value = formatted;
+        }
 
         function updateUI() {
             let totalCount = cart.length;
@@ -225,7 +263,6 @@
             }
         }
 
-        // Подбор рекомендаций ДЛЯ ВСЕХ телефонов в корзине (без потери блоков при клике)
         async function openCartModal() {
             if(cart.length === 0) { return; }
             let list = document.getElementById('cartItemsList');
@@ -242,17 +279,14 @@
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
 
-            // Список ключевых слов для отсеивания уже добавленных аксессуаров
             let accessoryKeywords = ['чехол', 'стекло', 'пленка', 'чохол', 'скло', 'плівка', 'защитное', 'глянцевая', 'матовая'];
 
-            // Выбираем строго телефоны
             let phoneItems = cart.filter(item => {
                 let t = item.title.toLowerCase();
                 let isAccessory = accessoryKeywords.some(kw => t.includes(kw));
                 return !isAccessory;
             });
 
-            // Формируем уникальные модели телефонов
             let uniqueModels = [];
             phoneItems.forEach(item => {
                 let cleanTitle = item.title.split('(')[0].trim();
@@ -314,10 +348,22 @@
         }
 
         function submitOrder() {
-            let name = document.getElementById('clientName').value;
-            let phoneInput = document.getElementById('clientPhone').value;
+            let name = document.getElementById('clientName').value.trim();
+            let phoneInput = document.getElementById('clientPhone').value.trim();
             
-            if(!name || !phoneInput) { alert('Введите имя и телефон!'); return; }
+            // Получаем только чистые цифры без префикса +380
+            let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
+
+            if (!name) { 
+                alert('Пожалуйста, введите ваше имя!'); 
+                return; 
+            }
+            
+            // Проверка: должно быть введено ровно 9 цифр после +380
+            if (digitsOnly.length !== 9) { 
+                alert('Пожалуйста, введите корректный номер телефона (9 цифр после +380)!'); 
+                return; 
+            }
             
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
