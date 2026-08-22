@@ -90,19 +90,23 @@ def get_accessories():
 
     has_glass = False
 
-    # 1. Ищем чехлы и стекла для конкретной модели
+    # 1. Поиск совпадений в Названии и в новом поле Совместимость
     for p in products:
         cat = str(p.get("Категория", "")).strip().lower()
         title = str(p.get("Название", "")).strip().lower()
+        compat = str(p.get("Совместимость", "")).strip().lower()  # Колонка из Google Таблицы
 
-        if model_query in title:
+        # Проверяем совпадение модели по названию ИЛИ по полю совместимости
+        if (model_query in title) or (model_query in compat):
             if cat in glass_categories:
                 has_glass = True
 
             if cat in (glass_categories + case_categories + film_categories):
-                matched.append({k: clean_val(v) for k, v in p.items()})
+                clean_p = {k: clean_val(v) for k, v in p.items()}
+                if clean_p not in matched:
+                    matched.append(clean_p)
 
-    # 2. Если стекла для данной модели НЕТ — подтягиваем варианты пленок
+    # 2. Если стекла для модели (или её аналогов) не найдено — предлагаем пленки
     if not has_glass:
         for p in products:
             cat = str(p.get("Категория", "")).strip().lower()
