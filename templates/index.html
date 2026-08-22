@@ -225,7 +225,7 @@
             }
         }
 
-        // Подбор рекомендаций ДЛЯ ВСЕХ телефонов в корзине
+        // Подбор рекомендаций ДЛЯ ВСЕХ телефонов в корзине (без потери блоков при клике)
         async function openCartModal() {
             if(cart.length === 0) { return; }
             let list = document.getElementById('cartItemsList');
@@ -242,18 +242,24 @@
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
 
-            // Находим все уникальные телефоны в корзине
+            // Список ключевых слов для отсеивания уже добавленных аксессуаров
+            let accessoryKeywords = ['чехол', 'стекло', 'пленка', 'чохол', 'скло', 'плівка', 'защитное', 'глянцевая', 'матовая'];
+
+            // Выбираем строго телефоны
             let phoneItems = cart.filter(item => {
                 let t = item.title.toLowerCase();
-                return t.includes('samsung') || t.includes('iphone') || t.includes('xiaomi') || t.includes('a17') || t.includes('телефон') || t.includes('смартфон');
+                let isAccessory = accessoryKeywords.some(kw => t.includes(kw));
+                return !isAccessory;
             });
 
-            // Формируем уникальный список поисковых моделей (чтобы не запрашивать одинаковые)
+            // Формируем уникальные модели телефонов
             let uniqueModels = [];
             phoneItems.forEach(item => {
-                let words = item.title.split(' ');
+                let cleanTitle = item.title.split('(')[0].trim();
+                let words = cleanTitle.split(' ');
                 let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
                 let cleanModel = searchModel.trim().toLowerCase();
+                
                 if (!uniqueModels.some(m => m.clean === cleanModel)) {
                     uniqueModels.push({ raw: searchModel, clean: cleanModel });
                 }
@@ -262,7 +268,6 @@
             if (uniqueModels.length > 0) {
                 let htmlBuffer = '';
                 
-                // Запрашиваем аксессуары параллельно для всех выбранных моделей
                 for (let m of uniqueModels) {
                     try {
                         let res = await fetch(`/api/accessories?model=${encodeURIComponent(m.clean)}`);
