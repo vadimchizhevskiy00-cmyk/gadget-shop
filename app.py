@@ -6,12 +6,12 @@ import requests
 
 app = Flask(__name__)
 
-# Замените на ваши данные
+# Замените на ваши данные Telegram
 TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
 TELEGRAM_CHAT_ID = "396778432"
 
-# Ссылка на опубликованную CSV-таблицу Google Sheets
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"  # Вставьте сюда вашу ссылку
+# Ссылка на вашу опубликованную CSV-таблицу Google Sheets
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
 
 
 def clean_val(val):
@@ -25,19 +25,18 @@ def clean_val(val):
 
 
 def get_products():
-    """Чтение продуктов напрямую по ссылке CSV_URL"""
+    """Чтение продуктов напрямую по ссылке CSV_URL из Google Sheets"""
     if not CSV_URL or "http" not in CSV_URL:
         return []
 
     try:
-        # Загружаем свежие данные из Google Sheets по ссылке
         response = requests.get(CSV_URL)
         response.encoding = 'utf-8'
 
         if response.status_code == 200:
             csv_data = io.StringIO(response.text)
             df = pd.read_csv(csv_data)
-            df = df.fillna("-")  # Заменяем все пустые ячейки (NaN)
+            df = df.fillna("-")
             products = df.to_dict(orient="records")
             return products
         else:
@@ -87,26 +86,33 @@ def get_accessories():
     products = get_products()
     matched = []
 
-    # Категории сопутствующих товаров
-    accessory_categories = [
-        "чехлы",
-        "стекла",
-        "пленки",
-        "чохлы",
-        "захисні стекла",
-        "плівки",
-    ]
+    # Разделяем категории по типам
+    glass_categories = ["стекла", "захисні стекла"]
+    case_categories = ["чехлы", "чохлы"]
+    film_categories = ["пленки", "плівки"]
 
+    has_glass = False
+
+    # 1. Ищем чехлы и стекла для конкретной модели
     for p in products:
         cat = str(p.get("Категория", "")).strip().lower()
         title = str(p.get("Название", "")).strip().lower()
 
-        # Если товар относится к аксессуарам и в его названии есть искомая модель
-        if cat in accessory_categories:
-            if model_query in title:
-                # Очищаем все поля объекта от NaN
+        if model_query in title:
+            if cat in glass_categories:
+                has_glass = True
+
+            if cat in (glass_categories + case_categories + film_categories):
+                matched.append({k: clean_val(v) for k, v in p.items()})
+
+    # 2. Если стекла для данной модели НЕТ — подтягиваем варианты пленок
+    if not has_glass:
+        for p in products:
+            cat = str(p.get("Категория", "")).strip().lower()
+            if cat in film_categories:
                 clean_p = {k: clean_val(v) for k, v in p.items()}
-                matched.append(clean_p)
+                if clean_p not in matched:
+                    matched.append(clean_p)
 
     return jsonify(matched)
 
