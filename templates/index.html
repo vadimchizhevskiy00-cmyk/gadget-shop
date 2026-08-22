@@ -51,25 +51,18 @@
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
 
-        /* Блок рекомендаций прямо под карточкой товара */
-        .product-recommendations {
-            margin-top: 14px;
-            padding: 12px;
-            background: var(--bg);
-            border-radius: 14px;
-            border: 2px dashed var(--accent);
-            display: none; /* Скрыт по умолчанию, пока не нажали «В корзину» */
-        }
-        .rec-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent); }
-        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--secondary); padding: 8px; border-radius: 8px; }
-        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-
-        /* Модальное окно оформления (открывается ТОЛЬКО по нажатию на синюю кнопку внизу Telegram) */
+        /* Модальное окно оформления */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
         .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); outline: none; }
         .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
+
+        /* Блок рекомендаций внутри модального окна */
+        .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
+        .rec-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent); }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
+        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -88,7 +81,7 @@
         <div class="category-title">Раздел: {{ category }}</div>
 
         {% for p in products %}
-        <div class="product-card" id="card-{{ loop.index }}">
+        <div class="product-card">
             {% if p.Фото %}
             <img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">
             {% endif %}
@@ -111,13 +104,12 @@
             </div>
             {% endif %}
 
-            <!-- Кнопки добавления -->
             {% if 'матовая' in p.Название.lower() %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
                 <select id="select-{{ loop.index }}" class="price-select">
                     <option value="400">Матовая — 400 грн</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', 'rec-container-{{ loop.index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
             {% elif '-' in p.Цена|string %}
                 <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант (глянцевая):</div>
                 <select id="select-{{ loop.index }}" class="price-select">
@@ -125,27 +117,27 @@
                     <option value="400">400 грн — Антиблик</option>
                     <option value="500">500 грн — Антиблик / Самовосстановление</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', 'rec-container-{{ loop.index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
-                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', 'rec-container-{{ loop.index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">В корзину</button>
             {% endif %}
-
-            <!-- Блок сопутствующих товаров, который появится ПОД карточкой -->
-            <div id="rec-container-{{ loop.index }}" class="product-recommendations">
-                <div class="rec-title">✨ С этим товаром часто берут:</div>
-                <div class="rec-items-list"></div>
-            </div>
         </div>
         {% endfor %}
     {% endif %}
 
-    <!-- Модальное окно оформления заказа (появится ТОЛЬКО при клике на нижнюю кнопку Telegram) -->
+    <!-- Модальное окно заказа -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
-            <div id="cartItemsList" style="margin-bottom: 15px; font-size: 15px;"></div>
+            <div id="cartItemsList" style="margin-bottom: 10px; font-size: 15px;"></div>
             
+            <!-- Блок сопутствующих товаров -->
+            <div id="recommendationsContainer" class="recommendation-box">
+                <div class="rec-title">✨ Добавьте к вашему телефону:</div>
+                <div id="recItemsList"></div>
+            </div>
+
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
             <input type="tel" id="clientPhone" class="form-input" placeholder="Номер телефона">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
@@ -180,26 +172,25 @@
         }
         updateUI();
 
-        // Добавление в корзину БЕЗ открытия модалок + показ аксессуаров под карточкой
-        function addToCart(title, price, recContainerId, btnElement) { 
+        // Тихое добавление в корзину (без всплывающего окна)
+        function addToCart(title, price, btnElement) { 
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
             updateUI(); 
 
-            // Меняем текст кнопки на секунду для визуального отклика
-            let originalText = btnElement.innerText;
-            btnElement.innerText = "✓ В корзине";
-            btnElement.style.background = "var(--green)";
-            setTimeout(() => {
-                btnElement.innerText = originalText;
-                btnElement.style.background = "var(--accent)";
-            }, 1200);
-
-            // Загружаем и показываем аксессуары прямо под карточкой этого товара
-            loadAccessoriesForCard(title, recContainerId);
+            // Показываем временный индикатор добавления на самой кнопке
+            if (btnElement) {
+                let orig = btnElement.innerText;
+                btnElement.innerText = "✓ В корзине";
+                btnElement.style.background = "var(--green)";
+                setTimeout(() => {
+                    btnElement.innerText = orig;
+                    btnElement.style.background = "var(--accent)";
+                }, 1200);
+            }
         }
 
-        function addWithOptions(baseTitle, selectId, recContainerId, btnElement) {
+        function addWithOptions(baseTitle, selectId, btnElement) {
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
             let selectedText = selectElement.options[selectElement.selectedIndex].text;
@@ -209,61 +200,34 @@
             cart.push({title: fullTitle, price: selectedPrice});
             updateUI();
 
-            let originalText = btnElement.innerText;
-            btnElement.innerText = "✓ В корзине";
-            btnElement.style.background = "var(--green)";
-            setTimeout(() => {
-                btnElement.innerText = originalText;
-                btnElement.style.background = "var(--accent)";
-            }, 1200);
-
-            loadAccessoriesForCard(baseTitle, recContainerId);
+            if (btnElement) {
+                let orig = btnElement.innerText;
+                btnElement.innerText = "✓ В корзине";
+                btnElement.style.background = "var(--green)";
+                setTimeout(() => {
+                    btnElement.innerText = orig;
+                    btnElement.style.background = "var(--accent)";
+                }, 1200);
+            }
         }
 
-        // Запрос к бэкенду и вывод аксессуаров под конкретной карточкой
-        function loadAccessoriesForCard(productTitle, containerId) {
-            let words = productTitle.split(' ');
-            let searchModel = words.slice(0, 2).join(' ').toLowerCase(); 
-
-            fetch(`/api/accessories?model=${encodeURIComponent(searchModel)}`)
-                .then(res => res.json())
-                .then(accessories => {
-                    let container = document.getElementById(containerId);
-                    if (!container) return;
-                    let listDiv = container.querySelector('.rec-items-list');
-                    
-                    if (accessories && accessories.length > 0) {
-                        listDiv.innerHTML = accessories.map(acc => `
-                            <div class="rec-item">
-                                <span>${acc.Название} — <b>${acc.Цена} грн</b></span>
-                                <button class="add-rec-btn" onclick="addAccessoryDirectly('${acc.Название}', '${acc.Цена}', this)">+ Добавить</button>
-                            </div>
-                        `).join('');
-                        container.style.display = 'block'; // Плавный показ блока под карточкой
-                    } else {
-                        container.style.display = 'none';
-                    }
-                }).catch(() => {
-                    // Если ошибка сети, просто не показываем блок
-                });
-        }
-
-        // Добавление аксессуара из блока под карточкой (тоже тихо, без всплывающих окон)
-        function addAccessoryDirectly(title, price, btnElement) {
+        function addAccessory(title, price) {
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: title, price: price});
             updateUI();
-
-            let originalText = btnElement.innerText;
-            btnElement.innerText = "✓";
-            btnElement.style.background = "var(--green)";
-            setTimeout(() => {
-                btnElement.innerText = originalText;
-                btnElement.style.background = "var(--accent)";
-            }, 1000);
+            openCartModal(); // Переоткрываем для обнуления/перерасчета сумм в окне
         }
 
-        // Модальное окно корзины открывается СТРОГО по клику на синюю кнопку Telegram внизу
+        function removeFromCart(index) {
+            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('medium'); }
+            cart.splice(index, 1);
+            updateUI();
+            if (cart.length > 0) {
+                openCartModal();
+            }
+        }
+
+        // Вызывается ТОЛЬКО по нажатию на нижнюю синюю кнопку Telegram "Оформить заказ"
         function openCartModal() {
             if(cart.length === 0) { return; }
             let list = document.getElementById('cartItemsList');
@@ -277,17 +241,39 @@
                 </div>
             `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
 
+            // Подтягиваем сопутствующие аксессуары по модели первого товара в корзине
+            let recBox = document.getElementById('recommendationsContainer');
+            let recList = document.getElementById('recItemsList');
+            let firstItem = cart[0];
+
+            if (firstItem) {
+                let words = firstItem.title.split(' ');
+                let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
+
+                fetch(`/api/accessories?model=${encodeURIComponent(searchModel.toLowerCase())}`)
+                    .then(res => res.json())
+                    .then(accessories => {
+                        if (accessories && accessories.length > 0) {
+                            recList.innerHTML = accessories.map(acc => `
+                                <div class="rec-item">
+                                    <span>${acc.Название}</span>
+                                    <button class="add-rec-btn" onclick="addAccessory('${acc.Название}', '${acc.Цена}')">+ ${acc.Цена} грн</button>
+                                </div>
+                            `).join('');
+                            recBox.style.display = 'block';
+                        } else {
+                            recBox.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {
+                        recBox.style.display = 'none';
+                    });
+            } else {
+                recBox.style.display = 'none';
+            }
+
             document.getElementById('cartModal').style.display = 'flex';
             mainButton.hide();
-        }
-
-        function removeFromCart(index) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('medium'); }
-            cart.splice(index, 1);
-            updateUI();
-            if (cart.length > 0) {
-                openCartModal();
-            }
         }
 
         function closeModal() { 
