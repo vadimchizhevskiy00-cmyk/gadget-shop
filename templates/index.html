@@ -51,7 +51,7 @@
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
 
-        /* Модальное окно оформления */
+        /* Модальное окно заказа */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
         .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); outline: none; }
@@ -172,13 +172,12 @@
         }
         updateUI();
 
-        // Тихое добавление в корзину (без всплывающего окна)
+        // Тихое добавление в корзину с индикатором
         function addToCart(title, price, btnElement) { 
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title, price}); 
             updateUI(); 
 
-            // Показываем временный индикатор добавления на самой кнопке
             if (btnElement) {
                 let orig = btnElement.innerText;
                 btnElement.innerText = "✓ В корзине";
@@ -215,7 +214,7 @@
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
             cart.push({title: title, price: price});
             updateUI();
-            openCartModal(); // Переоткрываем для обнуления/перерасчета сумм в окне
+            openCartModal(); 
         }
 
         function removeFromCart(index) {
@@ -227,7 +226,7 @@
             }
         }
 
-        // Вызывается ТОЛЬКО по нажатию на нижнюю синюю кнопку Telegram "Оформить заказ"
+        // Вызывается ТОЛЬКО по нажатию на нижнюю синюю кнопку Telegram
         function openCartModal() {
             if(cart.length === 0) { return; }
             let list = document.getElementById('cartItemsList');
@@ -243,22 +242,34 @@
 
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
-            
-            // Ищем любой телефон в корзине
+            let recTitle = recBox ? recBox.querySelector('.rec-title') : null;
+
             let phoneItem = cart.find(item => {
                 let t = item.title.toLowerCase();
                 return t.includes('samsung') || t.includes('iphone') || t.includes('xiaomi') || t.includes('a17');
             }) || cart[0];
 
             if (phoneItem) {
-                // Извлекаем название модели (например, из "Samsung A17" берем "A17" или "Samsung A17")
-                let titleWords = phoneItem.title.split(' ');
-                let searchModel = titleWords.length > 1 ? titleWords[1] : titleWords[0]; 
+                let words = phoneItem.title.split(' ');
+                let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
 
                 fetch(`/api/accessories?model=${encodeURIComponent(searchModel.toLowerCase())}`)
                     .then(res => res.json())
                     .then(accessories => {
                         if (accessories && accessories.length > 0) {
+                            let hasGlass = accessories.some(acc => {
+                                let cat = (acc.Категория || '').toLowerCase();
+                                return cat.includes('стекл') || cat.includes('скл');
+                            });
+
+                            if (recTitle) {
+                                if (hasGlass) {
+                                    recTitle.innerText = "✨ Добавьте к вашему телефону:";
+                                } else {
+                                    recTitle.innerText = "📜 Стекла нет в наличии. Предлагаем пленку:";
+                                }
+                            }
+
                             recList.innerHTML = accessories.map(acc => `
                                 <div class="rec-item">
                                     <span>${acc.Название}</span>
@@ -280,6 +291,7 @@
             document.getElementById('cartModal').style.display = 'flex';
             mainButton.hide();
         }
+
         function closeModal() { 
             document.getElementById('cartModal').style.display = 'none'; 
             if (cart.length > 0) { mainButton.show(); }
