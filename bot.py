@@ -2,7 +2,7 @@ import telebot
 from telebot import types
 
 # 1. Укажите актуальные данные
-TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
+TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
