@@ -38,12 +38,17 @@ def get_products():
                 mem_raw = str(p.get("Память", "-")).strip()
                 price_raw = str(p.get("Цена", "-")).strip()
 
-                if "/" in mem_raw and "/" in price_raw:
-                    p["memory_list"] = [m.strip() for m in mem_raw.split("/")]
-                    p["price_list"] = [pr.strip() for pr in price_raw.split("/")]
+                # Безопасный разбор памяти
+                if "/" in mem_raw:
+                    p["memory_list"] = [m.strip() for m in mem_raw.split("/") if m.strip()]
                 else:
-                    p["memory_list"] = [mem_raw] if mem_raw != "-" else []
-                    p["price_list"] = [price_raw]
+                    p["memory_list"] = [mem_raw] if mem_raw not in ["-", "nan"] else []
+
+                # Безопасный разбор цен (гарантирует хотя бы 1 элемент в списке)
+                if "/" in price_raw:
+                    p["price_list"] = [pr.strip() for pr in price_raw.split("/") if pr.strip()]
+                else:
+                    p["price_list"] = [price_raw] if price_raw not in ["-", "nan"] else ["0"]
 
             return products
         else:
