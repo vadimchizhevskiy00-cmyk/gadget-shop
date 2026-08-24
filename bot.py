@@ -1,51 +1,200 @@
 import telebot
 from telebot import types
 
-TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"  # Проверьте, что здесь ваш актуальный токен
-WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"  # Проверьте ссылку
+TELEGRAM_BOT_TOKEN = "8762340517:AAHqxuOU0qfTs9qADk0IDCUyu2X2YI8LJAM"
+WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 
-bot = telebot.TeleBot(TOKEN)
+tb_bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+user_quiz_data = {}
 
 
-@bot.message_handler(commands=["start"])
-def start(message):
+@tb_bot.message_handler(commands=["start"])
+def start_cmd(message):
     web_app = types.WebAppInfo(url=WEB_APP_URL)
 
-    # 1. Кнопка внутри сообщения
-    inline_keyboard = types.InlineKeyboardMarkup()
-    inline_button = types.InlineKeyboardButton(
-        text="🛍️ Відкрити каталог", web_app=web_app
+    inline_kb = types.InlineKeyboardMarkup()
+    inline_kb.add(
+        types.InlineKeyboardButton(
+            text="🛍️ Відкрити каталог", web_app=web_app
+        )
     )
-    inline_keyboard.add(inline_button)
 
-    # 2. Большая нижняя кнопка
-    reply_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    reply_button = types.KeyboardButton(
-        text="📱 Відкрити каталог", web_app=web_app
+    reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    reply_kb.add(
+        types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app),
+        types.KeyboardButton(text="🧭 Мастер подбора"),
     )
-    reply_keyboard.add(reply_button)
 
     welcome_text = (
         f"Вітаємо, {message.from_user.first_name}! 👋\n\n"
-        f"Ласкаво просимо до нашого магазину гаджетів та аксесуарів.\n"
-        f"Натисніть кнопку нижче, щоб переглянути каталог та зробити замовлення 👇"
+        f"Ласкаво просимо до нашого магазину гаджетів та аксесуарів.\n\n"
+        f"Шукаєте новий телефон або потрібен аксесуар? "
+        f"Натисніть «🧭 Мастер подбора» і ми підберемо кращий варіант! 👇"
     )
 
-    # Отправляем приветствие с кнопкой
-    bot.send_message(
+    tb_bot.send_message(
+        message.chat.id, welcome_text, reply_markup=inline_kb
+    )
+    tb_bot.send_message(
         message.chat.id,
-        welcome_text,
-        reply_markup=inline_keyboard,
+        "Каталог та помічник завжди поруч ⬇️",
+        reply_markup=reply_kb,
     )
 
-    # Фиксируем нижнюю кнопку
-    bot.send_message(
+
+@tb_bot.message_handler(func=lambda msg: msg.text == "🧭 Мастер подбора")
+def start_quiz(message):
+    user_quiz_data[message.chat.id] = {}
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton("📱 Выбрать новый телефон", callback_data="goal_phone"),
+    )
+    kb.add(
+        types.InlineKeyboardButton("🛡️ Аксессуар (чехол / стекло / пленка)", callback_data="goal_acc"),
+    )
+
+    tb_bot.send_message(
         message.chat.id,
-        "Каталог завжди доступний за кнопкою знизу ⬇️",
-        reply_markup=reply_keyboard,
+        "<b>Шаг 1:</b> Что вы ищете сегодня?",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@tb_bot.callback_query_handler(func=lambda call: call.data == "goal_phone")
+def quiz_phone_step1(call):
+    user_quiz_data[call.message.chat.id] = {"goal": "phone"}
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton("📸 Крутая камера", callback_data="pfeature_camera"),
+        types.InlineKeyboardButton("🔋 Долгая батарея", callback_data="pfeature_battery"),
+    )
+    kb.add(
+        types.InlineKeyboardButton("🎮 Игры и скорость", callback_data="pfeature_power"),
+        types.InlineKeyboardButton("⚖️ Баланс цена/качество", callback_data="pfeature_balance"),
+    )
+
+    tb_bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text="<b>Шаг 2:</b> Что для вас самое главное в смартфоне?",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@tb_bot.callback_query_handler(func=lambda call: call.data.startswith("pfeature_"))
+def quiz_phone_finish(call):
+    feature = call.data.split("_")[1]
+    advice = "Рекомендуем смартфоны с мощным процессором и ярким экраном."
+    if feature == "camera":
+        advice = "Рекомендуем флагманы с продвинутой оптикой и оптической стабилизацией."
+    elif feature == "battery":
+        advice = "Рекомендуем модели с аккумулятором от 5000 мАч и быстрой зарядкой."
+    elif feature == "balance":
+        advice = "Рекомендуем популярные среднебюджетные хиты продаж."
+
+    final_url = f"{WEB_APP_URL}/?category=телефоны"
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(
+            text="📱 Посмотреть подходящие телефоны",
+            web_app=types.WebAppInfo(url=final_url),
+        )
+    )
+
+    tb_bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text=f"✅ <b>Подбор завершен!</b>\n\n💡 <i>{advice}</i>\n\nПерейдите в каталог:",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@tb_bot.callback_query_handler(func=lambda call: call.data == "goal_acc")
+def quiz_acc_step1(call):
+    user_quiz_data[call.message.chat.id] = {"goal": "acc"}
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton("🍏 Apple (iPhone)", callback_data="brand_apple"),
+        types.InlineKeyboardButton("📱 Samsung", callback_data="brand_samsung"),
+    )
+    kb.add(
+        types.InlineKeyboardButton("⚡ Xiaomi / Poco", callback_data="brand_xiaomi"),
+        types.InlineKeyboardButton("🌐 Другой бренд", callback_data="brand_other"),
+    )
+
+    tb_bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text="<b>Шаг 2:</b> Укажите бренд вашего устройства:",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@tb_bot.callback_query_handler(func=lambda call: call.data.startswith("brand_"))
+def quiz_acc_step2(call):
+    brand = call.data.split("_")[1]
+    user_data = user_quiz_data.get(call.message.chat.id, {})
+    user_data["brand"] = brand
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton("🛡️ Чехол", callback_data="type_Чехлы"),
+        types.InlineKeyboardButton("✨ Защитное стекло", callback_data="type_Стекла"),
+    )
+    kb.add(
+        types.InlineKeyboardButton("📜 Гидрогелевая пленка", callback_data="type_Пленки"),
+    )
+
+    tb_bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text="<b>Шаг 3:</b> Что именно вы ищете?",
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+@tb_bot.callback_query_handler(func=lambda call: call.data.startswith("type_"))
+def quiz_acc_finish(call):
+    p_type = call.data.split("_")[1]
+    user_data = user_quiz_data.get(call.message.chat.id, {})
+    brand = user_data.get("brand", "all")
+
+    search_term = ""
+    if brand == "apple":
+        search_term = "iphone"
+    elif brand == "samsung":
+        search_term = "samsung"
+    elif brand == "xiaomi":
+        search_term = "xiaomi"
+
+    final_url = f"{WEB_APP_URL}/?category={p_type}&search={search_term}"
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(
+            text="🎯 Посмотреть варианты",
+            web_app=types.WebAppInfo(url=final_url),
+        )
+    )
+
+    tb_bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text="✅ <b>Подбор завершен!</b> Нажмите кнопку ниже, чтобы открыть каталог:",
+        parse_mode="HTML",
+        reply_markup=kb,
     )
 
 
 if __name__ == "__main__":
-    print("Бот запущен...")
-    bot.infinity_polling()
+    print("Бот успешно запущен...")
+    tb_bot.infinity_polling(none_stop=True)
