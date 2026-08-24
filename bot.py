@@ -1,7 +1,6 @@
 import telebot
 from telebot import types
 
-# 1. Укажите актуальные данные
 TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 
@@ -41,18 +40,20 @@ def start_cmd(message):
     )
 
 
-# ---------------- ШАГ 1: СТАРТ КВИЗА ----------------
-
 @bot.message_handler(func=lambda msg: msg.text == "🧭 Мастер подбора")
 def start_quiz(message):
     user_quiz_data[message.chat.id] = {}
 
     kb = types.InlineKeyboardMarkup()
     kb.add(
-        types.InlineKeyboardButton("📱 Выбрать новый телефон", callback_data="goal_phone"),
+        types.InlineKeyboardButton(
+            "📱 Выбрать новый телефон", callback_data="goal_phone"
+        ),
     )
     kb.add(
-        types.InlineKeyboardButton("🛡️ Аксессуар (чехол / стекло / пленка)", callback_data="goal_acc"),
+        types.InlineKeyboardButton(
+            "🛡️ Аксессуар (чехол / стекло / пленка)", callback_data="goal_acc"
+        ),
     )
 
     bot.send_message(
@@ -63,29 +64,33 @@ def start_quiz(message):
     )
 
 
-# ---------------- ЕДИНЫЙ ОБРАБОТЧИК ВСЕХ КНОПОК ----------------
-
 @bot.callback_query_handler(func=lambda call: True)
 def handle_all_callbacks(call):
-    # Обязательно подтверждаем клик для Telegram!
     bot.answer_callback_query(call.id)
 
     data = call.data
     chat_id = call.message.chat.id
     message_id = call.message.id
 
-    # 1. Выбор: Телефон
     if data == "goal_phone":
         user_quiz_data[chat_id] = {"goal": "phone"}
 
         kb = types.InlineKeyboardMarkup()
         kb.add(
-            types.InlineKeyboardButton("📸 Крутая камера", callback_data="pfeature_camera"),
-            types.InlineKeyboardButton("🔋 Долгая батарея", callback_data="pfeature_battery"),
+            types.InlineKeyboardButton(
+                "📸 Крутая камера", callback_data="pfeature_camera"
+            ),
+            types.InlineKeyboardButton(
+                "🔋 Долгая батарея", callback_data="pfeature_battery"
+            ),
         )
         kb.add(
-            types.InlineKeyboardButton("🎮 Игры и скорость", callback_data="pfeature_power"),
-            types.InlineKeyboardButton("⚖️ Баланс цена/качество", callback_data="pfeature_balance"),
+            types.InlineKeyboardButton(
+                "🎮 Игры и скорость", callback_data="pfeature_power"
+            ),
+            types.InlineKeyboardButton(
+                "⚖️ Баланс цена/качество", callback_data="pfeature_balance"
+            ),
         )
 
         bot.edit_message_text(
@@ -96,13 +101,14 @@ def handle_all_callbacks(call):
             reply_markup=kb,
         )
 
-    # 2. Выбор приоритета телефона
     elif data.startswith("pfeature_"):
         feature = data.split("_")[1]
 
         advice = "Рекомендуем смартфоны с мощным процессором и ярким экраном."
         if feature == "camera":
-            advice = "Рекомендуем флагманы с продвинутой оптикой и стабилизацией."
+            advice = (
+                "Рекомендуем флагманы с продвинутой оптикой и стабилизацией."
+            )
         elif feature == "battery":
             advice = "Рекомендуем модели с аккумулятором от 5000 мАч и быстрой зарядкой."
         elif feature == "balance":
@@ -126,18 +132,25 @@ def handle_all_callbacks(call):
             reply_markup=kb,
         )
 
-    # 3. Выбор: Аксессуары
     elif data == "goal_acc":
         user_quiz_data[chat_id] = {"goal": "acc"}
 
         kb = types.InlineKeyboardMarkup()
         kb.add(
-            types.InlineKeyboardButton("🍏 Apple (iPhone)", callback_data="brand_apple"),
-            types.InlineKeyboardButton("📱 Samsung", callback_data="brand_samsung"),
+            types.InlineKeyboardButton(
+                "🍏 Apple (iPhone)", callback_data="brand_apple"
+            ),
+            types.InlineKeyboardButton(
+                "📱 Samsung", callback_data="brand_samsung"
+            ),
         )
         kb.add(
-            types.InlineKeyboardButton("⚡ Xiaomi / Poco", callback_data="brand_xiaomi"),
-            types.InlineKeyboardButton("🌐 Другой бренд", callback_data="brand_other"),
+            types.InlineKeyboardButton(
+                "⚡ Xiaomi / Poco", callback_data="brand_xiaomi"
+            ),
+            types.InlineKeyboardButton(
+                "🌐 Другой бренд", callback_data="brand_other"
+            ),
         )
 
         bot.edit_message_text(
@@ -148,7 +161,6 @@ def handle_all_callbacks(call):
             reply_markup=kb,
         )
 
-    # 4. Выбор бренда
     elif data.startswith("brand_"):
         brand = data.split("_")[1]
         user_quiz_data[chat_id] = user_quiz_data.get(chat_id, {})
@@ -156,11 +168,17 @@ def handle_all_callbacks(call):
 
         kb = types.InlineKeyboardMarkup()
         kb.add(
-            types.InlineKeyboardButton("🛡️ Чехол", callback_data="type_Чехлы"),
-            types.InlineKeyboardButton("✨ Защитное стекло", callback_data="type_Стекла"),
+            types.InlineKeyboardButton(
+                "🛡️ Чехол", callback_data="type_Чехлы"
+            ),
+            types.InlineKeyboardButton(
+                "✨ Защитное стекло", callback_data="type_Стекла"
+            ),
         )
         kb.add(
-            types.InlineKeyboardButton("📜 Гидрогелевая пленка", callback_data="type_Пленки"),
+            types.InlineKeyboardButton(
+                "📜 Гидрогелевая пленка", callback_data="type_Пленки"
+            ),
         )
 
         bot.edit_message_text(
@@ -171,7 +189,6 @@ def handle_all_callbacks(call):
             reply_markup=kb,
         )
 
-    # 5. Финиш аксессуаров
     elif data.startswith("type_"):
         p_type = data.split("_")[1]
         user_data = user_quiz_data.get(chat_id, {})
@@ -205,12 +222,5 @@ def handle_all_callbacks(call):
 
 
 if __name__ == "__main__":
-    print("Сбрасываем старые зависшие запросы...")
-    try:
-        # Сброс очереди старых кликов
-        bot.remove_webhook(drop_pending_updates=True)
-    except Exception as e:
-        print(f"Предупреждение webhook: {e}")
-
-    print("Бот успешно запущен и слушает нажатия!")
+    bot.remove_webhook(drop_pending_updates=True)
     bot.infinity_polling(none_stop=True)
