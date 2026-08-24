@@ -72,7 +72,8 @@
         <div class="category-title">Раздел: {{ category }}</div>
 
         {% for p in products %}
-        <div class="product-card" id="card-{{ loop.index }}">
+        {% set outer_index = loop.index %}
+        <div class="product-card" id="card-{{ outer_index }}">
             {% if p.Статус and p.Статус != '-' %}
                 {% set st = p.Статус|string|lower %}
                 {% if 'хит' in st or 'hit' in st %}<div class="badge badge-hit">🔥 ХИТ</div>
@@ -82,7 +83,7 @@
 
             {% if p.Фото %}<img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">{% endif %}
 
-            <div class="product-title" id="title-{{ loop.index }}">{{ p.Название }}</div>
+            <div class="product-title" id="title-{{ outer_index }}">{{ p.Название }}</div>
             <div class="product-desc">{{ p.Описание }}</div>
 
             {% if category.lower() == 'телефоны' %}
@@ -91,7 +92,7 @@
                 <div class="memory-selector">
                     {% for m in p.memory_list %}
                         <button class="memory-btn {% if loop.first %}active{% endif %}" 
-                                onclick="selectMemory('{{ loop.parent.loop.index }}', '{{ m }}', '{{ p.price_list[loop.index0] if loop.index0 < p.price_list|length else p.price_list[0] }}', this)">
+                                onclick="selectMemory('{{ outer_index }}', '{{ m }}', '{{ p.price_list[loop.index0] if loop.index0 < p.price_list|length else p.price_list[0] }}', this)">
                             {{ m }}
                         </button>
                     {% endfor %}
@@ -104,21 +105,21 @@
                     {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
                 </div>
 
-                <div class="product-price" id="price-display-{{ loop.index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
-                <button class="buy-btn" id="btn-{{ loop.index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ loop.index }}', this)">В корзину</button>
+                <div class="product-price" id="price-display-{{ outer_index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
+                <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">В корзину</button>
 
             {% elif 'матовая' in p.Название.lower() %}
-                <select id="select-{{ loop.index }}" class="price-select">
+                <select id="select-{{ outer_index }}" class="price-select">
                     <option value="400">Матовая — 400 грн</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">В корзину</button>
             {% elif '-' in p.Цена|string %}
-                <select id="select-{{ loop.index }}" class="price-select">
+                <select id="select-{{ outer_index }}" class="price-select">
                     <option value="300">300 грн — Стандарт</option>
                     <option value="400">400 грн — Антиблик</option>
                     <option value="500">500 грн — Самовосстановление</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">В корзину</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
                 <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">В корзину</button>
