@@ -1,5 +1,7 @@
 import io
 import math
+import sys
+import traceback
 import pandas as pd
 import requests
 from flask import Flask, render_template, request, jsonify
@@ -12,9 +14,7 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZ
 
 
 def clean_val(val):
-    if val is None:
-        return "-"
-    if isinstance(val, float) and math.isnan(val):
+    if val is None or (isinstance(val, float) and math.isnan(val)):
         return "-"
     val_str = str(val).strip()
     return val_str if val_str and val_str != "nan" else "-"
@@ -25,7 +25,7 @@ def get_products():
         return []
 
     try:
-        response = requests.get(CSV_URL)
+        response = requests.get(CSV_URL, timeout=10)
         response.encoding = 'utf-8'
 
         if response.status_code == 200:
@@ -35,16 +35,17 @@ def get_products():
             products = df.to_dict(orient="records")
 
             for p in products:
-                mem_raw = str(p.get("Память", "-")).strip()
-                price_raw = str(p.get("Цена", "-")).strip()
+                # Безопасно достаем значения
+                mem_raw = clean_val(p.get("Память", "-"))
+                price_raw = clean_val(p.get("Цена", "-"))
 
-                # Безопасный разбор памяти
+                # Разбор памяти
                 if "/" in mem_raw:
                     p["memory_list"] = [m.strip() for m in mem_raw.split("/") if m.strip()]
                 else:
                     p["memory_list"] = [mem_raw] if mem_raw not in ["-", "nan"] else []
 
-                # Безопасный разбор цен (гарантирует хотя бы 1 элемент в списке)
+                # Разбор цен
                 if "/" in price_raw:
                     p["price_list"] = [pr.strip() for pr in price_raw.split("/") if pr.strip()]
                 else:
@@ -52,121 +53,131 @@ def get_products():
 
             return products
         else:
+            print(f"Ошибка загрузки CSV: статус {response.status_code}", file=sys.stderr)
             return []
     except Exception as e:
-        print(f"Ошибка при чтении CSV: {e}")
+        print(f"Ошибка при обработке CSV:\n{traceback.format_exc()}", file=sys.stderr)
         return []
 
 
 @app.route("/")
 def index():
-    category = request.args.get("category", "").strip()
-    search = request.args.get("search", "").strip().lower()
+    try:
+        category = request.args.get("category", "").strip()
+        search = request.args.get("search", "").strip().lower()
 
-    products = get_products()
-    filtered_products = []
+        products = get_products()
+        filtered_products = []
 
-    for p in products:
-        p_cat = str(p.get("Категория", "")).strip().lower()
-        if category and category.lower() != "all":
-            if p_cat != category.lower():
+        for p in products:
+            p_cat = clean_val(p.get("Категория", "")).lower()
+            if category and category.lower() != "all":
+                if p_cat != category.lower():
+                    continue
+
+            p_title = clean_val(p.get("Название", "")).lower()
+            p_compat = clean_val(p.get("Совместимость", "")).lower()
+            
+            if search and (search not in p_title and search not in p_compat):
                 continue
 
-        p_title = str(p.get("Название", "")).strip().lower()
-        p_compat = str(p.get("Совместимость", "")).strip().lower()
-        
-        if search and (search not in p_title and search not in p_compat):
-            continue
+            filtered_products.append(p)
 
-        filtered_products.append(p)
-
-    return render_template(
-        "index.html",
-        products=filtered_products,
-        category=category,
-        search=search,
-    )
+        return render_template(
+            "index.html",
+            products=filtered_products,
+            category=category,
+            search=search,
+        )
+    except Exception as e:
+        # Прямой вывод детальной ошибки в лог Render
+        print(f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}", file=sys.stderr)
+        return f"<h3>Произошла ошибка при загрузке каталога:</h3><pre>{e}</pre>", 500
 
 
 @app.route("/api/accessories")
 def get_accessories():
-    model_query = request.args.get("model", "").strip().lower()
-    if not model_query:
-        return jsonify([])
+    try:
+        model_query = request.args.get("model", "").strip().lower()
+        if not model_query:
+            return jsonify([])
 
-    products = get_products()
-    matched = []
+        products = get_products()
+        matched = []
 
-    glass_categories = ["стекла", "захисні стекла"]
-    case_categories = ["чехлы", "чохлы"]
-    film_categories = ["пленки", "плівки"]
+        glass_categories = ["стекла", "захисні стекла"]
+        case_categories = ["чехлы", "чохлы"]
+        film_categories = ["пленки", "плівки"]
 
-    has_glass = False
+        has_glass = False
 
-    for p in products:
-        cat = str(p.get("Категория", "")).strip().lower()
-        title = str(p.get("Название", "")).strip().lower()
-        compat = str(p.get("Совместимость", "")).strip().lower()
-
-        if (model_query in title) or (model_query in compat):
-            if cat in glass_categories:
-                has_glass = True
-
-            if cat in (glass_categories + case_categories + film_categories):
-                clean_p = {k: clean_val(v) for k, v in p.items()}
-                if clean_p not in matched:
-                    matched.append(clean_p)
-
-    if not has_glass:
         for p in products:
-            cat = str(p.get("Категория", "")).strip().lower()
-            if cat in film_categories:
-                clean_p = {k: clean_val(v) for k, v in p.items()}
-                if clean_p not in matched:
-                    matched.append(clean_p)
+            cat = clean_val(p.get("Категория", "")).lower()
+            title = clean_val(p.get("Название", "")).lower()
+            compat = clean_val(p.get("Совместимость", "")).lower()
 
-    return jsonify(matched)
+            if (model_query in title) or (model_query in compat):
+                if cat in glass_categories:
+                    has_glass = True
+
+                if cat in (glass_categories + case_categories + film_categories):
+                    clean_p = {k: clean_val(v) for k, v in p.items()}
+                    if clean_p not in matched:
+                        matched.append(clean_p)
+
+        if not has_glass:
+            for p in products:
+                cat = clean_val(p.get("Категория", "")).lower()
+                if cat in film_categories:
+                    clean_p = {k: clean_val(v) for k, v in p.items()}
+                    if clean_p not in matched:
+                        matched.append(clean_p)
+
+        return jsonify(matched)
+    except Exception as e:
+        print(f"ERROR IN ACCESSORIES API:\n{traceback.format_exc()}", file=sys.stderr)
+        return jsonify([])
 
 
 @app.route("/order", methods=["POST"])
 def send_order():
-    data = request.get_json()
-    if not data:
-        return jsonify({"status": "error", "message": "No data"}), 400
-
-    name = data.get("name", "Не указано")
-    phone = data.get("phone", "Не указан")
-    items = data.get("items", [])
-
-    if not items:
-        return jsonify({"status": "error", "message": "Cart is empty"}), 400
-
-    total_price = sum(float(i.get("price", 0)) for i in items)
-
-    items_text = ""
-    for idx, item in enumerate(items, 1):
-        items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
-
-    message = (
-        f"🛍️ <b>Новый заказ!</b>\n\n"
-        f"👤 <b>Имя:</b> {name}\n"
-        f"📞 <b>Телефон:</b> {phone}\n\n"
-        f"📋 <b>Товары:</b>\n{items_text}\n"
-        f"💰 <b>Итого:</b> {total_price} грн"
-    )
-
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No data"}), 400
+
+        name = data.get("name", "Не указано")
+        phone = data.get("phone", "Не указан")
+        items = data.get("items", [])
+
+        if not items:
+            return jsonify({"status": "error", "message": "Cart is empty"}), 400
+
+        total_price = sum(float(i.get("price", 0)) for i in items)
+
+        items_text = ""
+        for idx, item in enumerate(items, 1):
+            items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
+
+        message = (
+            f"🛍️ <b>Новый заказ!</b>\n\n"
+            f"👤 <b>Имя:</b> {name}\n"
+            f"📞 <b>Телефон:</b> {phone}\n\n"
+            f"📋 <b>Товары:</b>\n{items_text}\n"
+            f"💰 <b>Итого:</b> {total_price} грн"
+        )
+
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {
             "chat_id": TELEGRAM_CHAT_ID,
             "text": message,
             "parse_mode": "HTML",
         }
-        requests.post(url, json=payload)
+        requests.post(url, json=payload, timeout=10)
+        return jsonify({"status": "success"})
     except Exception as e:
-        print(f"Ошибка при отправке заказа в Telegram: {e}")
-
-    return jsonify({"status": "success"})
+        print(f"ERROR IN ORDER ROUTE:\n{traceback.format_exc()}", file=sys.stderr)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
