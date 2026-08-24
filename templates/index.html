@@ -86,7 +86,7 @@
             <div class="product-desc">{{ p.Описание }}</div>
 
             {% if category.lower() == 'телефоны' %}
-                {% if p.memory_list %}
+                {% if p.memory_list and p.memory_list|length > 0 %}
                 <div style="font-size:12px; opacity:0.7; font-weight:bold; margin-top:8px;">Объем памяти:</div>
                 <div class="memory-selector">
                     {% for m in p.memory_list %}
@@ -104,7 +104,7 @@
                     {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
                 </div>
 
-                <div class="product-price" id="price-display-{{ loop.index }}">{{ p.price_list[0] }} грн</div>
+                <div class="product-price" id="price-display-{{ loop.index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
                 <button class="buy-btn" id="btn-{{ loop.index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ loop.index }}', this)">В корзину</button>
 
             {% elif 'матовая' in p.Название.lower() %}
