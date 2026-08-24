@@ -20,66 +20,39 @@
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
         
         .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: none; background: var(--accent); color: white; font-weight: bold; text-align: center; text-decoration: none; box-sizing: border-box; cursor: pointer; }
-        
         .search-input { width: 100%; padding: 12px; margin: 10px 0 15px 0; border-radius: 12px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; outline: none; }
-        
         .category-title { font-size: 13px; opacity: 0.6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
 
-        /* Карточка товара с поддержкой бейджа */
         .product-card { position: relative; background: var(--secondary); padding: 16px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         
-        /* Стили бейджей (Хит / New / Скидка) */
-        .badge {
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: bold;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            z-index: 2;
-        }
+        .badge { position: absolute; top: 14px; right: 14px; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase; z-index: 2; }
         .badge-hit { background: var(--red); }
         .badge-new { background: var(--green); }
         .badge-sale { background: var(--orange); }
 
-        .product-img { 
-            width: 100%; 
-            height: 200px; 
-            object-fit: contain; 
-            margin-bottom: 12px; 
-            background: transparent; 
-            padding: 5px; 
-            box-sizing: border-box;
-            border: none;
-        }
-        
-        .product-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 16px; }
+        .product-img { width: 100%; height: 200px; object-fit: contain; margin-bottom: 12px; background: transparent; padding: 5px; box-sizing: border-box; border: none; }
+        .product-title { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+        .product-price { color: var(--accent); font-weight: bold; margin: 8px 0; font-size: 18px; }
         .product-desc { font-size: 14px; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
         
+        /* Кнопки выбора памяти */
+        .memory-selector { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .memory-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+        .memory-btn.active { background: var(--accent); color: white; }
+
         .specs-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
         .spec-tag { font-size: 11px; opacity: 0.8; background: var(--bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--hint); }
 
-        .memory-tag { font-size: 12px; opacity: 0.7; margin-bottom: 6px; background: var(--bg); display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-        
         .price-select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 10px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; outline: none; box-sizing: border-box; }
-
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
 
-        /* Модальное окно заказа */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
         .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); outline: none; }
         .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
 
-        /* Блок рекомендаций */
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
         .phone-group-title { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 3px; }
         .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
@@ -96,61 +69,57 @@
         <a href="/?category=Пленки" class="nav-btn">📜 Пленки</a>
     {% else %}
         <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px;">⬅ Назад к категориям</button>
-        
         <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
-        
         <div class="category-title">Раздел: {{ category }}</div>
 
         {% for p in products %}
-        <div class="product-card">
-            <!-- Отображение бейджей -->
+        <div class="product-card" id="card-{{ loop.index }}">
             {% if p.Статус and p.Статус != '-' %}
                 {% set st = p.Статус|string|lower %}
-                {% if 'хит' in st or 'hit' in st or 'top' in st %}
-                    <div class="badge badge-hit">🔥 ХИТ</div>
-                {% elif 'new' in st or 'нов' in st %}
-                    <div class="badge badge-new">✨ NEW</div>
-                {% elif 'скидк' in st or 'sale' in st or '%' in st %}
-                    <div class="badge badge-sale">🏷️ {{ p.Статус }}</div>
-                {% else %}
-                    <div class="badge badge-hit">{{ p.Статус }}</div>
-                {% endif %}
+                {% if 'хит' in st or 'hit' in st %}<div class="badge badge-hit">🔥 ХИТ</div>
+                {% elif 'new' in st or 'нов' in st %}<div class="badge badge-new">✨ NEW</div>
+                {% else %}<div class="badge badge-sale">🏷️ {{ p.Статус }}</div>{% endif %}
             {% endif %}
 
-            {% if p.Фото %}
-            <img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">
-            {% endif %}
+            {% if p.Фото %}<img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">{% endif %}
 
-            <div class="product-title">{{ p.Название }}</div>
-            
-            {% if category.lower() == 'телефоны' and p.Память and p.Память != '-' %}
-            <div class="memory-tag">💾 Память: {{ p.Память }}</div>
-            {% endif %}
-            
+            <div class="product-title" id="title-{{ loop.index }}">{{ p.Название }}</div>
             <div class="product-desc">{{ p.Описание }}</div>
 
             {% if category.lower() == 'телефоны' %}
-            <div class="specs-container">
-                {% if p.Экран and p.Экран != '-' %}<div class="spec-tag">🖥️ {{ p.Экран }}</div>{% endif %}
-                {% if p.Камера and p.Камера != '-' %}<div class="spec-tag">📸 {{ p.Камера }}</div>{% endif %}
-                {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
-                {% if p.Мощность and p.Мощность != '-' %}<div class="spec-tag">⚡ {{ p.Мощность }}</div>{% endif %}
-                {% if p.Процессор and p.Процессор != '-' %}<div class="spec-tag">⚙️ {{ p.Процессор }}</div>{% endif %}
-            </div>
-            {% endif %}
+                <!-- Варианты памяти через кнопки -->
+                {% set memories = p.Память.split('/') if '/' in p.Память|string else [p.Память] %}
+                {% set prices = p.Цена.split('/') if '/' in p.Цена|string else [p.Цена] %}
+                
+                <div style="font-size:12px; opacity:0.7; font-weight:bold; margin-top:8px;">Объем памяти:</div>
+                <div class="memory-selector">
+                    {% for m in memories %}
+                        <button class="memory-btn {% if loop.first %}active{% endif %}" 
+                                onclick="selectMemory('{{ loop.parent.loop.index }}', '{{ m.strip() }}', '{{ prices[loop.index0].strip() if loop.index0 < prices|length else prices[0].strip() }}', this)">
+                            {{ m.strip() }}
+                        </button>
+                    {% endfor %}
+                </div>
 
-            {% if 'матовая' in p.Название.lower() %}
-                <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант:</div>
+                <div class="specs-container">
+                    {% if p.Экран and p.Экран != '-' %}<div class="spec-tag">🖥️ {{ p.Экран }}</div>{% endif %}
+                    {% if p.Камера and p.Камера != '-' %}<div class="spec-tag">📸 {{ p.Камера }}</div>{% endif %}
+                    {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
+                </div>
+
+                <div class="product-price" id="price-display-{{ loop.index }}">{{ prices[0].strip() }} грн</div>
+                <button class="buy-btn" id="btn-{{ loop.index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ loop.index }}', this)">В корзину</button>
+
+            {% elif 'матовая' in p.Название.lower() %}
                 <select id="select-{{ loop.index }}" class="price-select">
                     <option value="400">Матовая — 400 грн</option>
                 </select>
                 <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
             {% elif '-' in p.Цена|string %}
-                <div style="font-size: 13px; margin-bottom: 4px; opacity: 0.8;">Выберите вариант (глянцевая):</div>
                 <select id="select-{{ loop.index }}" class="price-select">
                     <option value="300">300 грн — Стандарт</option>
                     <option value="400">400 грн — Антиблик</option>
-                    <option value="500">500 грн — Антиблик / Самовосстановление</option>
+                    <option value="500">500 грн — Самовосстановление</option>
                 </select>
                 <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ loop.index }}', this)">В корзину</button>
             {% else %}
@@ -165,17 +134,15 @@
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
-            <div id="cartItemsList" style="margin-bottom: 10px; font-size: 15px;"></div>
-            
+            <div id="cartItemsList"></div>
             <div id="recommendationsContainer" class="recommendation-box">
                 <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Добавьте к вашим устройствам:</div>
                 <div id="recItemsList"></div>
             </div>
-
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
             <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
             <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
-            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer; font-size:14px;">Закрыть</button>
+            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Закрыть</button>
         </div>
     </div>
 
@@ -183,44 +150,47 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let selectedPhoneState = {};
 
         let mainButton = tg.MainButton;
         mainButton.color = tg.themeParams.button_color || "#2481cc";
-        mainButton.textColor = tg.themeParams.button_text_color || "#ffffff";
         
-        Telegram.WebApp.onEvent('mainButtonClicked', function(){
-            openCartModal();
-        });
+        Telegram.WebApp.onEvent('mainButtonClicked', function(){ openCartModal(); });
+
+        // Переключение кнопок памяти и обновление цены
+        function selectMemory(cardIdx, memoryVal, priceVal, btnEl) {
+            let parent = btnEl.parentElement;
+            parent.querySelectorAll('.memory-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+
+            document.getElementById(`price-display-${cardIdx}`).innerText = `${priceVal} грн`;
+            selectedPhoneState[cardIdx] = { memory: memoryVal, price: priceVal };
+        }
+
+        function addPhoneToCart(baseTitle, cardIdx, btnElement) {
+            let state = selectedPhoneState[cardIdx];
+            let memory = state ? state.memory : '';
+            let price = state ? state.price : document.getElementById(`price-display-${cardIdx}`).innerText.replace(' грн', '');
+            
+            // Если память не переключали, берём значение из первой активной кнопки
+            if (!memory) {
+                let activeBtn = document.querySelector(`#card-${cardIdx} .memory-btn.active`);
+                if (activeBtn) memory = activeBtn.innerText.trim();
+            }
+
+            let fullTitle = memory ? `${baseTitle} (${memory})` : baseTitle;
+            addToCart(fullTitle, price, btnElement);
+        }
 
         function formatPhone(input) {
             let prefix = "+380 ";
-            let value = input.value;
-
-            if (!value.startsWith(prefix)) {
-                input.value = prefix;
-                return;
-            }
-
-            let digits = value.slice(prefix.length).replace(/\D/g, '');
-
-            if (digits.length > 9) {
-                digits = digits.substring(0, 9);
-            }
-
+            if (!input.value.startsWith(prefix)) { input.value = prefix; return; }
+            let digits = input.value.slice(prefix.length).replace(/\D/g, '').substring(0, 9);
             let formatted = prefix;
-            if (digits.length > 0) {
-                formatted += digits.substring(0, 2);
-            }
-            if (digits.length >= 3) {
-                formatted += " " + digits.substring(2, 5);
-            }
-            if (digits.length >= 6) {
-                formatted += " " + digits.substring(5, 7);
-            }
-            if (digits.length >= 8) {
-                formatted += " " + digits.substring(7, 9);
-            }
-
+            if (digits.length > 0) formatted += digits.substring(0, 2);
+            if (digits.length >= 3) formatted += " " + digits.substring(2, 5);
+            if (digits.length >= 6) formatted += " " + digits.substring(5, 7);
+            if (digits.length >= 8) formatted += " " + digits.substring(7, 9);
             input.value = formatted;
         }
 
@@ -258,61 +228,41 @@
             let selectElement = document.getElementById(selectId);
             let selectedPrice = selectElement.value;
             let selectedText = selectElement.options[selectElement.selectedIndex].text;
-            let fullTitle = `${baseTitle} (${selectedText})`;
-            
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
-            cart.push({title: fullTitle, price: selectedPrice});
-            updateUI();
-
-            if (btnElement) {
-                let orig = btnElement.innerText;
-                btnElement.innerText = "✓ В корзине";
-                btnElement.style.background = "var(--green)";
-                setTimeout(() => {
-                    btnElement.innerText = orig;
-                    btnElement.style.background = "var(--accent)";
-                }, 1200);
-            }
+            addToCart(`${baseTitle} (${selectedText})`, selectedPrice, btnElement);
         }
 
         function addAccessory(title, price) {
             if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
-            cart.push({title: title, price: price});
+            cart.push({title, price});
             updateUI();
             openCartModal(); 
         }
 
         function removeFromCart(index) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('medium'); }
             cart.splice(index, 1);
             updateUI();
-            if (cart.length > 0) {
-                openCartModal();
-            }
+            if (cart.length > 0) openCartModal();
         }
 
         async function openCartModal() {
-            if(cart.length === 0) { return; }
+            if(cart.length === 0) return;
             let list = document.getElementById('cartItemsList');
             let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
             
             list.innerHTML = cart.map((i, index) => `
                 <div class="cart-item">
-                    <span style="flex-grow: 1; word-break: break-word;">${i.title}</span>
-                    <b style="white-space: nowrap;">${i.price} грн</b>
-                    <button class="delete-btn" onclick="removeFromCart(${index})" title="Удалить">✕</button>
+                    <span>${i.title}</span>
+                    <b>${i.price} грн</b>
+                    <button class="delete-btn" onclick="removeFromCart(${index})">✕</button>
                 </div>
             `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
 
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
 
-            let accessoryKeywords = ['чехол', 'стекло', 'пленка', 'чохол', 'скло', 'плівка', 'защитное', 'глянцевая', 'матовая'];
-
             let phoneItems = cart.filter(item => {
                 let t = item.title.toLowerCase();
-                let isAccessory = accessoryKeywords.some(kw => t.includes(kw));
-                return !isAccessory;
+                return !['чехол', 'стекло', 'пленка', 'чохол', 'скло', 'плівка'].some(kw => t.includes(kw));
             });
 
             let uniqueModels = [];
@@ -321,7 +271,6 @@
                 let words = cleanTitle.split(' ');
                 let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
                 let cleanModel = searchModel.trim().toLowerCase();
-                
                 if (!uniqueModels.some(m => m.clean === cleanModel)) {
                     uniqueModels.push({ raw: searchModel, clean: cleanModel });
                 }
@@ -329,21 +278,12 @@
 
             if (uniqueModels.length > 0) {
                 let htmlBuffer = '';
-                
                 for (let m of uniqueModels) {
                     try {
                         let res = await fetch(`/api/accessories?model=${encodeURIComponent(m.clean)}`);
                         let accessories = await res.json();
-                        
                         if (accessories && accessories.length > 0) {
-                            let hasGlass = accessories.some(acc => {
-                                let cat = (acc.Категория || '').toLowerCase();
-                                return cat.includes('стекл') || cat.includes('скл');
-                            });
-
-                            let headerText = hasGlass ? `К модели ${m.raw}:` : `К модели ${m.raw} (пленка вместо стекла):`;
-                            
-                            htmlBuffer += `<div class="phone-group-title">📱 ${headerText}</div>`;
+                            htmlBuffer += `<div class="phone-group-title">📱 К модели ${m.raw}:</div>`;
                             htmlBuffer += accessories.map(acc => `
                                 <div class="rec-item">
                                     <span>${acc.Название}</span>
@@ -351,20 +291,11 @@
                                 </div>
                             `).join('');
                         }
-                    } catch (e) {
-                        console.error('Ошибка подгрузки для', m.raw, e);
-                    }
+                    } catch (e) {}
                 }
-
-                if (htmlBuffer) {
-                    recList.innerHTML = htmlBuffer;
-                    recBox.style.display = 'block';
-                } else {
-                    recBox.style.display = 'none';
-                }
-            } else {
-                recBox.style.display = 'none';
-            }
+                if (htmlBuffer) { recList.innerHTML = htmlBuffer; recBox.style.display = 'block'; }
+                else { recBox.style.display = 'none'; }
+            } else { recBox.style.display = 'none'; }
 
             document.getElementById('cartModal').style.display = 'flex';
             mainButton.hide();
@@ -372,7 +303,7 @@
 
         function closeModal() { 
             document.getElementById('cartModal').style.display = 'none'; 
-            if (cart.length > 0) { mainButton.show(); }
+            if (cart.length > 0) mainButton.show();
         }
 
         function submitOrder() {
@@ -380,21 +311,13 @@
             let phoneInput = document.getElementById('clientPhone').value.trim();
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
 
-            if (!name) { 
-                alert('Пожалуйста, введите ваше имя!'); 
-                return; 
-            }
-            
-            if (digitsOnly.length !== 9) { 
-                alert('Пожалуйста, введите корректный номер телефона (9 цифр после +380)!'); 
-                return; 
-            }
+            if (!name) { alert('Пожалуйста, введите ваше имя!'); return; }
+            if (digitsOnly.length !== 9) { alert('Пожалуйста, введите корректный номер (9 цифр после +380)!'); return; }
             
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phoneInput })
             }).then(() => { 
-                if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
                 alert('Спасибо! Ваш заказ принят.'); 
                 localStorage.removeItem('cart'); 
                 cart = []; 
