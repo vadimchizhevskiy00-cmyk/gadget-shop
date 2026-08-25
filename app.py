@@ -11,7 +11,7 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 
 # ==========================================
-# ⚙️ НАСТРОЙКИ
+# ⚙️ НАЛАШТУВАННЯ
 # ==========================================
 TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 TELEGRAM_CHAT_ID = "396778432"
@@ -59,7 +59,7 @@ def get_products():
         else:
             return []
     except Exception as e:
-        print(f"Ошибка при обработке CSV:\n{traceback.format_exc()}", file=sys.stderr)
+        print(f"Помилка при обробці CSV:\n{traceback.format_exc()}", file=sys.stderr)
         return []
 
 
@@ -112,7 +112,7 @@ def index():
         )
     except Exception as e:
         print(f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}", file=sys.stderr)
-        return f"<h3>Произошла ошибка при загрузке каталога:</h3><pre>{e}</pre>", 500
+        return f"<h3>Сталася помилка при завантаженні каталогу:</h3><pre>{e}</pre>", 500
 
 
 @app.route("/api/accessories")
