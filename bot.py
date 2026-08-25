@@ -29,11 +29,11 @@ def start_cmd(message):
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app),
-            types.KeyboardButton(text="🧭 Мастер подбора"),
+            types.KeyboardButton(text="🧭 Майстер з підбору"),
         )
         reply_kb.add(
-            types.KeyboardButton(text="📍 Магазин и контакты"),
-            types.KeyboardButton(text="❓ Частые вопросы (FAQ)"),
+            types.KeyboardButton(text="📍 Магазин та контакти"),
+            types.KeyboardButton(text="❓ Часті питання (FAQ)"),
         )
 
         welcome_text = (
@@ -54,15 +54,14 @@ def start_cmd(message):
 def send_faq_menu(message):
     try:
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("🛡️ Есть ли гарантия на технику?", callback_data="faq_warranty"))
-        kb.add(types.InlineKeyboardButton("📌 Как работает бронирование?", callback_data="faq_booking"))
-        kb.add(types.InlineKeyboardButton("📲 Помогаете перенести данные?", callback_data="faq_transfer"))
-        kb.add(types.InlineKeyboardButton("✨ Поклейка стекол / пленок", callback_data="faq_service"))
-        kb.add(types.InlineKeyboardButton("🔄 Есть ли обмен / Trade-In?", callback_data="faq_tradein"))
-        kb.add(types.InlineKeyboardButton("💬 Задать вопрос менеджеру", url=f"https://t.me/{MANAGER_USERNAME}"))
+        kb.add(types.InlineKeyboardButton("🛡️ Яка гарантія на техніку?", callback_data="faq_warranty"))
+        kb.add(types.InlineKeyboardButton("📌 Що таке бронювання товару?", callback_data="faq_booking"))
+        kb.add(types.InlineKeyboardButton("📲 Перенесення даних", callback_data="faq_transfer"))
+        kb.add(types.InlineKeyboardButton("✨ Встановлення захисту на дисплей", callback_data="faq_service"))
+        kb.add(types.InlineKeyboardButton("💬 Задати питання менеджеру", url=f"https://t.me/{MANAGER_USERNAME}"))
 
         faq_text = (
-            "❓ <b>Ответы на частые вопросы</b>\n\n"
+            "❓ <b>Відповіді на питання</b>\n\n"
             "Выберите интересующий вас вопрос ниже:"
         )
 
@@ -78,15 +77,15 @@ def send_faq_menu(message):
 def send_contacts(message):
     try:
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("🗺️ Проложить маршрут (Google Maps)", url=GOOGLE_MAPS_LINK))
-        kb.add(types.InlineKeyboardButton("💬 Написать менеджеру", url=f"https://t.me/{MANAGER_USERNAME}"))
+        kb.add(types.InlineKeyboardButton("🗺️ Де нас знайти (Google Maps)", url=GOOGLE_MAPS_LINK))
+        kb.add(types.InlineKeyboardButton("💬 Зв'язок з менеджером", url=f"https://t.me/{MANAGER_USERNAME}"))
 
         contact_text = (
-            f"🏢 <b>Наш магазин гаджетов и аксессуаров</b>\n\n"
-            f"📍 <b>Адрес:</b> {SHOP_ADDRESS}\n"
-            f"⏰ <b>Время работы:</b> {SHOP_HOURS}\n"
+            f"🏢 <b>Вітаємо у Lifecell!</b>\n\n"
+            f"📍 <b>Адреса:</b> {SHOP_ADDRESS}\n"
+            f"⏰ <b>Час роботи:</b> {SHOP_HOURS}\n"
             f"📞 <b>Телефон:</b> {SHOP_PHONE}\n\n"
-            f"💡 <i>Вы можете приехать, посмотреть, примерить чехол или поклеить стекло прямо у нас!</i>"
+            f"💡 <i>Ви зможете прийти, подивитися техніку, придбати аксесуари та поклеїти захист саме в нас!</i>"
         )
 
         bot.send_message(message.chat.id, contact_text, parse_mode="HTML", reply_markup=kb)
@@ -97,15 +96,15 @@ def send_contacts(message):
 # ==========================================
 # 🧭 МАСТЕР ПОДБОРА И ОБРАБОТКА CALLBACK
 # ==========================================
-@bot.message_handler(func=lambda msg: msg.text == "🧭 Мастер подбора")
+@bot.message_handler(func=lambda msg: msg.text == "🧭 Майстер з підбору")
 def start_quiz(message):
     user_quiz_data[message.chat.id] = {}
 
     kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("📱 Выбрать новый телефон", callback_data="goal_phone"))
-    kb.add(types.InlineKeyboardButton("🛡️ Аксессуар (чехол / стекло / пленка)", callback_data="goal_acc"))
+    kb.add(types.InlineKeyboardButton("📱Обрати новий телефон", callback_data="goal_phone"))
+    kb.add(types.InlineKeyboardButton("🛡️ Аксесуар (чохол / скло / плівка)", callback_data="goal_acc"))
 
-    bot.send_message(message.chat.id, "<b>Шаг 1:</b> Что вы ищете сегодня?", parse_mode="HTML", reply_markup=kb)
+    bot.send_message(message.chat.id, "<b>Шаг 1:</b> Що ви шукаєте сьогодні?", parse_mode="HTML", reply_markup=kb)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -119,77 +118,72 @@ def handle_callbacks(call):
     if data.startswith("faq_"):
         faq_answers = {
             "warranty": (
-                "🛡️ <b>Гарантия на технику</b>\n\n"
-                "На всю новую технику предоставляется официальная гарантия от 12 месяцев.\n"
-                "На б/у технику перед продажей проводится полная диагностика по 25 пунктам и дается наша гарантия от магазина."
+                "🛡️ <b>Гарантія на техніку</b>\n\n"
+                "Вся нова техніка має гарантію 12 місяців з моменту придбання.\n"
+                "Гарантія магазину на б/у техніку складає 2 тижні."
             ),
             "booking": (
-                "📌 <b>Как работает бронь на 24 часа?</b>\n\n"
-                "Вы оформляете товар в Mini App и выбираете пункт «Забронировать в магазине».\n"
-                "Мы резервируем позицию на складе на 24 часа. Вы спокойно приезжаете, осматриваете товар и оплачиваете на месте!"
+                "📌 <b>Як працює бронювання товару на 24 години?</b>\n\n"
+                "При оформленні товару ви можете натиснути кнопку "Забронювати на 24 години".\n"
+                "Ми резервуємо пристрій в магазині та чекаємо вашого візиту."
             ),
             "transfer": (
                 "📲 <b>Перенос данных</b>\n\n"
-                "Да! При покупке смартфона у нас в магазине наши специалисты абсолютно бесплатно или за минимальную стоимость помогут перенести все контакты, фото и приложения со старого устройства на новое."
+                "Так! При покупці пристрою продавці аналізуют обсяг інформації, яку треба перенести, визначают приблизний час та вартість робіт."
             ),
             "service": (
-                "✨ <b>Поклейка защитных стекол и пленок</b>\n\n"
-                "Вам не нужно клеить стекло самостоятельно! Наши мастера сделают идеальную поклейку без пыли и пузырей прямо при вас в магазине."
+                "✨ <b>Встановлення захисного скла та плівок</b>\n\n"
+                "Магазин пропонує великий спектр захисту для вашого пристрою. Якщо в нас нема скла на ваш телефон - не переймайтесь, гідрогелева плівка завжди в наявності!"
             ),
-            "tradein": (
-                "🔄 <b>Программа Trade-In</b>\n\n"
-                "Вы можете принести своё старое устройство в магазин, мы оценим его за 10 минут и вычтем эту сумму из стоимости вашего нового гаджета!"
-            )
         }
 
         topic = data.split("_")[1]
-        ans_text = faq_answers.get(topic, "Информация уточняется...")
+        ans_text = faq_answers.get(topic, "Зачекайте хвилинку...")
 
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("⬅️ Назад к вопросам", callback_data="faq_back"))
-        kb.add(types.InlineKeyboardButton("💬 Задать свой вопрос", url=f"https://t.me/{MANAGER_USERNAME}"))
+        kb.add(types.InlineKeyboardButton("⬅️ Назад до питань", callback_data="faq_back"))
+        kb.add(types.InlineKeyboardButton("💬 Задати своє питання", url=f"https://t.me/{MANAGER_USERNAME}"))
 
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=ans_text, parse_mode="HTML", reply_markup=kb)
 
     elif data == "faq_back":
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("🛡️ Есть ли гарантия на технику?", callback_data="faq_warranty"))
-        kb.add(types.InlineKeyboardButton("📌 Как работает бронирование?", callback_data="faq_booking"))
-        kb.add(types.InlineKeyboardButton("📲 Помогаете перенести данные?", callback_data="faq_transfer"))
-        kb.add(types.InlineKeyboardButton("✨ Поклейка стекол / пленок", callback_data="faq_service"))
-        kb.add(types.InlineKeyboardButton("🔄 Есть ли обмен / Trade-In?", callback_data="faq_tradein"))
-        kb.add(types.InlineKeyboardButton("💬 Задать вопрос менеджеру", url=f"https://t.me/{MANAGER_USERNAME}"))
+        kb.add(types.InlineKeyboardButton("🛡️ Яка гарантія на техніку?", callback_data="faq_warranty"))
+        kb.add(types.InlineKeyboardButton("📌 Що таке бронювання товару?", callback_data="faq_booking"))
+        kb.add(types.InlineKeyboardButton("📲 Перенесення даних?", callback_data="faq_transfer"))
+        kb.add(types.InlineKeyboardButton("✨ Встановлення захисту на дисплей", callback_data="faq_service"))
+        kb.add(types.InlineKeyboardButton("💬 Задати питання менеджеру", url=f"https://t.me/{MANAGER_USERNAME}"))
 
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="❓ <b>Ответы на частые вопросы</b>\n\nВыберите интересующий вас вопрос ниже:", parse_mode="HTML", reply_markup=kb)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="❓ <b>Відповіді на питання</b>\n\nОберіть питання нижче:", parse_mode="HTML", reply_markup=kb)
 
     # ---------------- ВЕТКА МАСТЕРА ПОДБОРА ----------------
     elif data == "goal_phone":
         user_quiz_data[chat_id] = {"goal": "phone"}
         kb = types.InlineKeyboardMarkup()
         kb.add(
-            types.InlineKeyboardButton("📸 Крутая камера", callback_data="pfeature_camera"),
-            types.InlineKeyboardButton("🔋 Долгая батарея", callback_data="pfeature_battery"),
+            types.InlineKeyboardButton("📸 Краща камера", callback_data="pfeature_camera"),
+            types.InlineKeyboardButton("🔋 Автономна батарея", callback_data="pfeature_battery"),
         )
         kb.add(
-            types.InlineKeyboardButton("🎮 Игры и скорость", callback_data="pfeature_power"),
-            types.InlineKeyboardButton("⚖️ Баланс цена/качество", callback_data="pfeature_balance"),
+            types.InlineKeyboardButton("🎮 Швидкість та плавність", callback_data="pfeature_power"),
+            types.InlineKeyboardButton("⚖️ Баланс ціна/якість", callback_data="pfeature_balance"),
         )
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 2:</b> Что для вас самое главное в смартфоне?", parse_mode="HTML", reply_markup=kb)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 2:</b> Що для вас головне в смартфоні?", parse_mode="HTML", reply_markup=kb)
 
     elif data.startswith("pfeature_"):
         feature = data.split("_")[1]
-        advice = "Рекомендуем смартфоны с мощным процессором и ярким экраном."
+        advice = "Рекомендуємо смартфони з потужним процесором та яскравим екраном."
         if feature == "camera":
             advice = "Рекомендуем флагманы с продвинутой оптикой и стабилизацией."
         elif feature == "battery":
-            advice = "Рекомендуем модели с аккумулятором от 5000 мАч и быстрой зарядкой."
+            advice = "Рекомендуємо моделі с батареєю від 5000 мАг та швидкою зарядкою."
         elif feature == "balance":
-            advice = "Рекомендуем популярные среднебюджетные хиты продаж."
+            advice = "Рекомендуємо популярні середньобюджетні телефони."
 
         final_url = f"{WEB_APP_URL}/?category=телефоны"
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton(text="📱 Посмотреть подходящие телефоны", web_app=types.WebAppInfo(url=final_url)))
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=f"✅ <b>Подбор телефона завершен!</b>\n\n💡 <i>{advice}</i>\n\nПерейдите в каталог:", parse_mode="HTML", reply_markup=kb)
+        kb.add(types.InlineKeyboardButton(text="📱 Подивитися варіанти", web_app=types.WebAppInfo(url=final_url)))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=f"✅ <b>Підбір телефонів завершений!</b>\n\n💡 <i>{advice}</i>\n\nПерейдіть до каталогу:", parse_mode="HTML", reply_markup=kb)
 
     elif data == "goal_acc":
         user_quiz_data[chat_id] = {"goal": "acc"}
@@ -200,9 +194,9 @@ def handle_callbacks(call):
         )
         kb.add(
             types.InlineKeyboardButton("⚡ Xiaomi / Poco", callback_data="brand_xiaomi"),
-            types.InlineKeyboardButton("🌐 Другой бренд", callback_data="brand_other"),
+            types.InlineKeyboardButton("🌐 Інший бренд", callback_data="brand_other"),
         )
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 2:</b> Укажите бренд вашего устройства:", parse_mode="HTML", reply_markup=kb)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 2:</b> Вкажіть бренд вашого пристрою:", parse_mode="HTML", reply_markup=kb)
 
     elif data.startswith("brand_"):
         brand = data.split("_")[1]
@@ -210,11 +204,11 @@ def handle_callbacks(call):
         user_quiz_data[chat_id]["brand"] = brand
         kb = types.InlineKeyboardMarkup()
         kb.add(
-            types.InlineKeyboardButton("🛡️ Чехол", callback_data="type_Чехлы"),
-            types.InlineKeyboardButton("✨ Защитное стекло", callback_data="type_Стекла"),
+            types.InlineKeyboardButton("🛡️ Чохол", callback_data="type_Чехлы"),
+            types.InlineKeyboardButton("✨ Захисне скло", callback_data="type_Стекла"),
         )
-        kb.add(types.InlineKeyboardButton("📜 Гидрогелевая пленка", callback_data="type_Пленки"))
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 3:</b> Что именно вы ищете?", parse_mode="HTML", reply_markup=kb)
+        kb.add(types.InlineKeyboardButton("📜 Гідрогелева плівка", callback_data="type_Пленки"))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="<b>Шаг 3:</b> Що саме ви шукаєте?", parse_mode="HTML", reply_markup=kb)
 
     elif data.startswith("type_"):
         p_type = data.split("_")[1]
@@ -224,8 +218,8 @@ def handle_callbacks(call):
 
         final_url = f"{WEB_APP_URL}/?category={p_type}&search={search_term}"
         kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton(text="🎯 Посмотреть варианты", web_app=types.WebAppInfo(url=final_url)))
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="✅ <b>Подбор завершен!</b> Нажмите кнопку ниже, чтобы открыть каталог:", parse_mode="HTML", reply_markup=kb)
+        kb.add(types.InlineKeyboardButton(text="🎯 Подивитися варіанти", web_app=types.WebAppInfo(url=final_url)))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="✅ <b>Підбір завершений!</b> Натисніть на кнопку нижче, щоб подивитися каталог:", parse_mode="HTML", reply_markup=kb)
 
 
 if __name__ == "__main__":
