@@ -187,11 +187,25 @@
         </div>
     </div>
 
+    <!-- Модальне вікно для ручного вводу (якщо ID не визначився) -->
+    <div class="modal" id="notifyModal">
+        <div class="modal-content">
+            <h3>🔔 Повідомити про появу</h3>
+            <div id="notifyProductName" style="font-weight:bold; margin-bottom:10px; color:var(--accent);"></div>
+            <p style="font-size:13px; opacity:0.8;">Залиште ваші контакти, і ми повідомимо вас одразу, як товар з'явиться у магазині!</p>
+            <input type="text" id="notifyClientName" class="form-input" placeholder="Ваше ім'я">
+            <input type="tel" id="notifyClientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
+            <button class="nav-btn" style="background:var(--orange);" onclick="submitNotify()">Надіслати заявку</button>
+            <button onclick="closeNotifyModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Скасувати</button>
+        </div>
+    </div>
+
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let selectedPhoneState = {};
+        let currentNotifyProduct = "";
 
         let mainButton = tg.MainButton;
         mainButton.color = tg.themeParams.button_color || "#2481cc";
@@ -354,30 +368,61 @@
             if (cart.length > 0) mainButton.show();
         }
 
-        function subscribeNotify(productTitle) {
-    		let userChatId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : null;
+        function openNotifyModal(productTitle) {
+            currentNotifyProduct = productTitle;
+            document.getElementById('notifyProductName').innerText = productTitle;
+            document.getElementById('notifyModal').style.display = 'flex';
+        }
 
-    		if (userChatId) {
-        		// Если открыто прямо из Telegram-бота — подписываем в 1 клик
-        		if (confirm(`Підписатися на сповіщення про появу "${productTitle}"?`)) {
-            			fetch('/order', {
-                			method: 'POST',
-                			headers: {'Content-Type': 'application/json'},
-                			body: JSON.stringify({
-                    				type: 'subscribe_notify',
-                    				chat_id: userChatId,
-                    				product_name: productTitle
-                			})
-            			}).then(() => {
-                			if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
-                			alert("✅ Готово! Як тільки товар з'явиться в магазині, бот надішле вам особисте повідомлення.");
+        function closeNotifyModal() {
+            document.getElementById('notifyModal').style.display = 'none';
+        }
+
+        function subscribeNotify(productTitle) {
+            let userChatId = null;
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                userChatId = window.Telegram.WebApp.initDataUnsafe.user.id;
+            }
+
+            if (userChatId) {
+                fetch('/order', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        type: 'subscribe_notify',
+                        chat_id: userChatId,
+                        product_name: productTitle
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
+                    alert("✅ Дякуємо! Ми зафіксували ваші дані. Як тільки товар з'явиться в магазині, бот надішле вам особисте повідомлення.");
+                })
+                .catch(err => {
+                    openNotifyModal(productTitle);
+                });
+            } else {
+                openNotifyModal(productTitle);
+            }
+        }
+
+        function submitNotify() {
+            let name = document.getElementById('notifyClientName').value.trim();
+            let phoneInput = document.getElementById('notifyClientPhone').value.trim();
+            let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
+
+            if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
+            if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
+
+            fetch('/order', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ type: 'notify', product_name: currentNotifyProduct, name: name, phone: phoneInput })
+            }).then(() => {
+                alert("Дякуємо! Ми зафіксували вашу заявку та повідомимо про появу товару.");
+                closeNotifyModal();
             });
-        			}
-    			} else {
-        			// Если ID не определился — запрашиваем телефон и отправляем заявку менеджеру
-        			openNotifyModal(productTitle);
-    			}
-	}
+        }
 
         function submitOrder() {
             let name = document.getElementById('clientName').value.trim();
