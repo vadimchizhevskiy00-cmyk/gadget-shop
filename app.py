@@ -38,14 +38,18 @@ def get_products():
             products = df.to_dict(orient="records")
 
             for p in products:
+                # Извлечение характеристик
                 mem_raw = clean_val(p.get("Память", "-"))
                 price_raw = clean_val(p.get("Цена", "-"))
+                p["Мощность"] = clean_val(p.get("Мощность", "-"))
 
+                # Разбор памяти
                 if "/" in mem_raw:
                     p["memory_list"] = [m.strip() for m in mem_raw.split("/") if m.strip()]
                 else:
                     p["memory_list"] = [mem_raw] if mem_raw not in ["-", "nan"] else []
 
+                # Разбор цен
                 if "/" in price_raw:
                     p["price_list"] = [pr.strip() for pr in price_raw.split("/") if pr.strip()]
                 else:
@@ -158,14 +162,14 @@ def send_order():
         for idx, item in enumerate(items, 1):
             items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
 
-        header_title = "📌 <b>НОВАЯ БРОНЬ В МАГАЗИНЕ (24Ч)</b>" if is_booking else "🛍️ <b>Новый заказ!</b>"
+        header_title = "📌 <b>НОВА БРОНЬ У МАГАЗИНІ (24Ч)</b>" if is_booking else "🛍️ <b>Нове замовлення!</b>"
 
         message = (
             f"{header_title}\n\n"
-            f"👤 <b>Имя:</b> {name}\n"
+            f"👤 <b>Ім'я:</b> {name}\n"
             f"📞 <b>Телефон:</b> {phone}\n\n"
-            f"📋 <b>Товары:</b>\n{items_text}\n"
-            f"💰 <b>К оплате в магазине:</b> {total_price} грн"
+            f"📋 <b>Товари:</b>\n{items_text}\n"
+            f"💰 <b>До сплати у магазині:</b> {total_price} грн"
         )
 
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
