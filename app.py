@@ -1,5 +1,7 @@
 import io
+import json
 import math
+import os
 import sys
 import traceback
 import pandas as pd
@@ -14,6 +16,7 @@ app = Flask(__name__)
 TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 TELEGRAM_CHAT_ID = "396778432"
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
+SUBS_FILE = "subscriptions.json"
 
 
 def clean_val(val):
@@ -38,18 +41,15 @@ def get_products():
             products = df.to_dict(orient="records")
 
             for p in products:
-                # Извлечение характеристик
                 mem_raw = clean_val(p.get("Память", "-"))
                 price_raw = clean_val(p.get("Цена", "-"))
                 p["Мощность"] = clean_val(p.get("Мощность", "-"))
 
-                # Разбор памяти
                 if "/" in mem_raw:
                     p["memory_list"] = [m.strip() for m in mem_raw.split("/") if m.strip()]
                 else:
                     p["memory_list"] = [mem_raw] if mem_raw not in ["-", "nan"] else []
 
-                # Разбор цен
                 if "/" in price_raw:
                     p["price_list"] = [pr.strip() for pr in price_raw.split("/") if pr.strip()]
                 else:
@@ -61,6 +61,24 @@ def get_products():
     except Exception as e:
         print(f"Ошибка при обработке CSV:\n{traceback.format_exc()}", file=sys.stderr)
         return []
+
+
+def save_subscription(chat_id, product_name):
+    subs = []
+    if os.path.exists(SUBS_FILE):
+        try:
+            with open(SUBS_FILE, "r", encoding="utf-8") as f:
+                subs = json.load(f)
+        except Exception:
+            subs = []
+
+    for s in subs:
+        if str(s.get("chat_id")) == str(chat_id) and s.get("product_name") == product_name:
+            return
+
+    subs.append({"chat_id": chat_id, "product_name": product_name})
+    with open(SUBS_FILE, "w", encoding="utf-8") as f:
+        json.dump(subs, f, ensure_ascii=False, indent=2)
 
 
 @app.route("/")
@@ -148,21 +166,30 @@ def send_order():
         if not data:
             return jsonify({"status": "error", "message": "No data"}), 400
 
-        name = data.get("name", "Не указано")
-        phone = data.get("phone", "Не указан")
+        req_type = data.get("type", "order")
+
+        if req_type == "subscribe_notify":
+            user_chat_id = data.get("chat_id")
+            product_name = data.get("product_name")
+
+            if user_chat_id and product_name:
+                save_subscription(user_chat_id, product_name)
+                return jsonify({"status": "success"})
+            return jsonify({"status": "error", "message": "Missing params"}), 400
+
+        name = data.get("name", "Не вказано")
+        phone = data.get("phone", "Не вказан")
         items = data.get("items", [])
-        is_booking = data.get("is_booking", False)
 
         if not items:
             return jsonify({"status": "error", "message": "Cart is empty"}), 400
 
         total_price = sum(float(i.get("price", 0)) for i in items)
-
         items_text = ""
         for idx, item in enumerate(items, 1):
             items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
 
-        header_title = "📌 <b>НОВА БРОНЬ У МАГАЗИНІ (24Ч)</b>" if is_booking else "🛍️ <b>Нове замовлення!</b>"
+        header_title = "📌 <b>НОВА БРОНЬ У МАГАЗИНІ (24Ч)</b>" if req_type == "booking" else "🛍️ <b>Нове замовлення!</b>"
 
         message = (
             f"{header_title}\n\n"
