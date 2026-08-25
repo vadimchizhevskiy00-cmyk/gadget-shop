@@ -12,7 +12,7 @@ from telebot import types
 # ==========================================
 # ⚙️ НАЛАШТУВАННЯ
 # ==========================================
-TELEGRAM_BOT_TOKEN = "ВАШ_ТОКЕН_БОТА"
+TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
 SUBS_FILE = "subscriptions.json"
