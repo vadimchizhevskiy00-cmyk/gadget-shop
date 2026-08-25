@@ -9,12 +9,11 @@ TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 WEB_APP_URL = "https://gadget-shop-v5kh.onrender.com"
 
 # Контакты и адрес вашего физического магазина
-SHOP_ADDRESS = "м.Чугуїв, бул.Центральний, 8"  # Укажите ваш адрес
+SHOP_ADDRESS = "м. Чугуїв, бул. Центральний, 8"  # Укажите ваш адрес
 SHOP_HOURS = "Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00"
 SHOP_PHONE = "+380 97 391 64 00, +380 63 189 16 83"  # Укажите ваш телефон
 MANAGER_USERNAME = "smthwrng121"  # Telegram юзернейм менеджера без @
 GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/RukWZ1QBZbQQsqnA9"  # Ссылка на вашу точку на Google Maps
-
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 user_quiz_data = {}
@@ -25,7 +24,6 @@ def start_cmd(message):
     try:
         web_app = types.WebAppInfo(url=WEB_APP_URL)
 
-        # Головне меню українською
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app),
@@ -114,13 +112,12 @@ def handle_callbacks(call):
     chat_id = call.message.chat.id
     message_id = call.message.id
 
-    # ---------------- ОБРОБКА FAQ ----------------
     if data.startswith("faq_"):
         faq_answers = {
             "warranty": (
                 "🛡️ <b>Гарантія на техніку</b>\n\n"
                 "На всю нову техніку надається офіційна гарантія від 12 місяців.\n"
-                "На б/в техніку - 2 тижні."
+                "На б/в техніку перед продажем проводиться повна діагностика за 25 пунктами та надається наша гарантія від магазину."
             ),
             "booking": (
                 "📌 <b>Як працює бронь на 24 години?</b>\n\n"
@@ -129,7 +126,7 @@ def handle_callbacks(call):
             ),
             "transfer": (
                 "📲 <b>Перенесення даних</b>\n\n"
-                "Так! При покупці смартфона у нас в магазині наші фахівці допоможуть перенести всі контакти, фото та додаткиі зі старого пристрою на новий."
+                "Так! При покупці смартфона у нас в магазині наші фахівці безкоштовно або за мінімальною вартістю допоможуть перенести всі контакти, фото та додатки зі старого пристрою на новий."
             ),
             "service": (
                 "✨ <b>Поклейка захисного скла та плівок</b>\n\n"
@@ -156,13 +153,12 @@ def handle_callbacks(call):
 
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="❓ <b>Відповіді на часті запитання</b>\n\nОберіть запитання, яке вас цікавить:", parse_mode="HTML", reply_markup=kb)
 
-    # ---------------- ГІЛКА МАЙСТРА ПІДБОРУ ----------------
     elif data == "goal_phone":
         user_quiz_data[chat_id] = {"goal": "phone"}
         kb = types.InlineKeyboardMarkup()
         kb.add(
             types.InlineKeyboardButton("📸 Крута камера", callback_data="pfeature_camera"),
-            types.InlineKeyboardButton("🔋 Автономна батарея", callback_data="pfeature_battery"),
+            types.InlineKeyboardButton("🔋 Довга батарея", callback_data="pfeature_battery"),
         )
         kb.add(
             types.InlineKeyboardButton("🎮 Ігри та швидкість", callback_data="pfeature_power"),
