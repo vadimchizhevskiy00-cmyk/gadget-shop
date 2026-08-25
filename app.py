@@ -8,6 +8,9 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
+# ==========================================
+# ⚙️ НАСТРОЙКИ
+# ==========================================
 TELEGRAM_BOT_TOKEN = "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY"
 TELEGRAM_CHAT_ID = "396778432"
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv"
@@ -35,17 +38,14 @@ def get_products():
             products = df.to_dict(orient="records")
 
             for p in products:
-                # Безопасно достаем значения
                 mem_raw = clean_val(p.get("Память", "-"))
                 price_raw = clean_val(p.get("Цена", "-"))
 
-                # Разбор памяти
                 if "/" in mem_raw:
                     p["memory_list"] = [m.strip() for m in mem_raw.split("/") if m.strip()]
                 else:
                     p["memory_list"] = [mem_raw] if mem_raw not in ["-", "nan"] else []
 
-                # Разбор цен
                 if "/" in price_raw:
                     p["price_list"] = [pr.strip() for pr in price_raw.split("/") if pr.strip()]
                 else:
@@ -53,7 +53,6 @@ def get_products():
 
             return products
         else:
-            print(f"Ошибка загрузки CSV: статус {response.status_code}", file=sys.stderr)
             return []
     except Exception as e:
         print(f"Ошибка при обработке CSV:\n{traceback.format_exc()}", file=sys.stderr)
@@ -90,7 +89,6 @@ def index():
             search=search,
         )
     except Exception as e:
-        # Прямой вывод детальной ошибки в лог Render
         print(f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}", file=sys.stderr)
         return f"<h3>Произошла ошибка при загрузке каталога:</h3><pre>{e}</pre>", 500
 
@@ -149,6 +147,7 @@ def send_order():
         name = data.get("name", "Не указано")
         phone = data.get("phone", "Не указан")
         items = data.get("items", [])
+        is_booking = data.get("is_booking", False)
 
         if not items:
             return jsonify({"status": "error", "message": "Cart is empty"}), 400
@@ -159,12 +158,14 @@ def send_order():
         for idx, item in enumerate(items, 1):
             items_text += f"{idx}. {item.get('title')} — {item.get('price')} грн\n"
 
+        header_title = "📌 <b>НОВАЯ БРОНЬ В МАГАЗИНЕ (24Ч)</b>" if is_booking else "🛍️ <b>Новый заказ!</b>"
+
         message = (
-            f"🛍️ <b>Новый заказ!</b>\n\n"
+            f"{header_title}\n\n"
             f"👤 <b>Имя:</b> {name}\n"
             f"📞 <b>Телефон:</b> {phone}\n\n"
             f"📋 <b>Товары:</b>\n{items_text}\n"
-            f"💰 <b>Итого:</b> {total_price} грн"
+            f"💰 <b>К оплате в магазине:</b> {total_price} грн"
         )
 
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
