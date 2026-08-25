@@ -355,28 +355,29 @@
         }
 
         function subscribeNotify(productTitle) {
-            let userChatId = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
+    		let userChatId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : null;
 
-            if (!userChatId) {
-                alert("Будь ласка, відкривайте каталог через Telegram-бота!");
-                return;
-            }
-
-            if (confirm(`Підписатися на сповіщення про появу "${productTitle}"?`)) {
-                fetch('/order', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        type: 'subscribe_notify',
-                        chat_id: userChatId,
-                        product_name: productTitle
-                    })
-                }).then(() => {
-                    if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
-                    alert("✅ Готово! Як тільки товар з'явиться в магазині, бот надішле вам особисте повідомлення.");
-                });
-            }
-        }
+    		if (userChatId) {
+        		// Если открыто прямо из Telegram-бота — подписываем в 1 клик
+        		if (confirm(`Підписатися на сповіщення про появу "${productTitle}"?`)) {
+            			fetch('/order', {
+                			method: 'POST',
+                			headers: {'Content-Type': 'application/json'},
+                			body: JSON.stringify({
+                    				type: 'subscribe_notify',
+                    				chat_id: userChatId,
+                    				product_name: productTitle
+                			})
+            			}).then(() => {
+                			if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
+                			alert("✅ Готово! Як тільки товар з'явиться в магазині, бот надішле вам особисте повідомлення.");
+            });
+        			}
+    			} else {
+        			// Если ID не определился — запрашиваем телефон и отправляем заявку менеджеру
+        			openNotifyModal(productTitle);
+    			}
+	}
 
         function submitOrder() {
             let name = document.getElementById('clientName').value.trim();
