@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Магазин гаджетов</title>
+    <title>Магазин гаджетів</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -63,7 +63,6 @@
         .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
 
-        /* Блок выбора бронирования */
         .booking-box { background: var(--secondary); padding: 12px; border-radius: 12px; margin: 12px 0; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid var(--accent); }
         .booking-box input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
 
@@ -77,14 +76,14 @@
 
     {% if not category %}
         <h1>Каталог</h1>
-        <a href="/?category=телефоны" class="nav-btn">📱 Телефоны</a>
-        <a href="/?category=Чехлы" class="nav-btn">🛡️ Чехлы</a>
-        <a href="/?category=Стекла" class="nav-btn">✨ Защитные стекла</a>
-        <a href="/?category=Пленки" class="nav-btn">📜 Пленки</a>
+        <a href="/?category=телефоны" class="nav-btn">📱 Телефони</a>
+        <a href="/?category=Чехлы" class="nav-btn">🛡️ Чохли</a>
+        <a href="/?category=Стекла" class="nav-btn">✨ Захисне скло</a>
+        <a href="/?category=Пленки" class="nav-btn">📜 Плівки</a>
     {% else %}
-        <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px;">⬅ Назад к категориям</button>
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
-        <div class="category-title">Раздел: {{ category }}</div>
+        <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px;">⬅ Назад до категорій</button>
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Пошук..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
+        <div class="category-title">Розділ: {{ category }}</div>
 
         {% for p in products %}
         {% set outer_index = loop.index %}
@@ -92,30 +91,30 @@
         <div class="product-card" id="card-{{ outer_index }}">
             
             {% if p.Статус and p.Статус != '-' %}
-                {% if 'хит' in status_str or 'hit' in status_str %}<div class="badge badge-hit">🔥 ХИТ</div>
+                {% if 'хит' in status_str or 'hit' in status_str %}<div class="badge badge-hit">🔥 ХІТ</div>
                 {% elif 'new' in status_str or 'нов' in status_str %}<div class="badge badge-new">✨ NEW</div>
-                {% elif 'акция' in status_str or 'скидк' in status_str %}<div class="badge badge-sale">🏷️ СКИДКА</div>{% endif %}
+                {% elif 'акция' in status_str or 'акція' in status_str or 'скидк' in status_str %}<div class="badge badge-sale">🏷️ ЗНИЖКА</div>{% endif %}
             {% endif %}
 
             {% if p.Фото %}<img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">{% endif %}
 
-            {% if 'нет' in status_str or 'закончил' in status_str or 'отсутств' in status_str %}
-                <div class="stock-status status-out-stock"><span class="status-dot dot-red"></span> Нет в наличии</div>
+            {% if 'нет' in status_str or 'немає' in status_str or 'закончил' in status_str %}
+                <div class="stock-status status-out-stock"><span class="status-dot dot-red"></span> Немає в наявності</div>
                 {% set is_out_of_stock = true %}
-            {% elif 'заказ' in status_str %}
-                <div class="stock-status status-order"><span class="status-dot dot-orange"></span> Под заказ (1-2 дня)</div>
+            {% elif 'заказ' in status_str or 'замовлення' in status_str %}
+                <div class="stock-status status-order"><span class="status-dot dot-orange"></span> Під замовлення (1-2 дні)</div>
                 {% set is_out_of_stock = false %}
             {% else %}
-                <div class="stock-status status-in-stock"><span class="status-dot dot-green"></span> В наличии в магазине</div>
+                <div class="stock-status status-in-stock"><span class="status-dot dot-green"></span> В наявності у магазині</div>
                 {% set is_out_of_stock = false %}
             {% endif %}
 
             <div class="product-title" id="title-{{ outer_index }}">{{ p.Название }}</div>
             <div class="product-desc">{{ p.Описание }}</div>
 
-            {% if category.lower() == 'телефоны' %}
+            {% if category.lower() == 'телефоны' or category.lower() == 'телефони' %}
                 {% if p.memory_list and p.memory_list|length > 0 %}
-                <div style="font-size:12px; opacity:0.7; font-weight:bold; margin-top:8px;">Объем памяти:</div>
+                <div style="font-size:12px; opacity:0.7; font-weight:bold; margin-top:8px;">Обсяг пам'яті:</div>
                 <div class="memory-selector">
                     {% for m in p.memory_list %}
                         <button class="memory-btn {% if loop.first %}active{% endif %}" 
@@ -135,55 +134,55 @@
                 <div class="product-price" id="price-display-{{ outer_index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
                 
                 {% if is_out_of_stock %}
-                    <button class="buy-btn" disabled>Нет в наличии</button>
+                    <button class="buy-btn" disabled>Немає в наявності</button>
                 {% else %}
-                    <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">В корзину</button>
+                    <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">У кошик</button>
                 {% endif %}
 
-            {% elif 'матовая' in p.Название.lower() %}
+            {% elif 'матовая' in p.Название.lower() or 'матова' in p.Название.lower() %}
                 <select id="select-{{ outer_index }}" class="price-select">
-                    <option value="400">Матовая — 400 грн</option>
+                    <option value="400">Матова — 400 грн</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">У кошик</button>
             {% elif '-' in p.Цена|string %}
                 <select id="select-{{ outer_index }}" class="price-select">
                     <option value="300">300 грн — Стандарт</option>
-                    <option value="400">400 грн — Антиблик</option>
-                    <option value="500">500 грн — Самовосстановление</option>
+                    <option value="400">400 грн — Антиблік</option>
+                    <option value="500">500 грн — Самовідновлення</option>
                 </select>
-                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">В корзину</button>
+                <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">У кошик</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
                 {% if is_out_of_stock %}
-                    <button class="buy-btn" disabled>Нет в наличии</button>
+                    <button class="buy-btn" disabled>Немає в наявності</button>
                 {% else %}
-                    <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">В корзину</button>
+                    <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">У кошик</button>
                 {% endif %}
             {% endif %}
         </div>
         {% endfor %}
     {% endif %}
 
-    <!-- Модальное окно заказа / брони -->
+    <!-- Модальне вікно замовлення / броні -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
-            <h3>Ваш заказ</h3>
+            <h3>Ваше замовлення</h3>
             <div id="cartItemsList"></div>
 
             <label class="booking-box">
                 <input type="checkbox" id="bookingCheckbox" checked>
-                <span>📌 Забронировать в магазине на 24 часа</span>
+                <span>📌 Забронювати у магазині на 24 години</span>
             </label>
 
             <div id="recommendationsContainer" class="recommendation-box">
-                <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Добавьте к вашим устройствам:</div>
+                <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Додайте до ваших пристроїв:</div>
                 <div id="recItemsList"></div>
             </div>
             
-            <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
+            <input type="text" id="clientName" class="form-input" placeholder="Ваше ім'я">
             <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
-            <button class="nav-btn" id="submitOrderBtn" onclick="submitOrder()">Забронировать заказ</button>
-            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Закрыть</button>
+            <button class="nav-btn" id="submitOrderBtn" onclick="submitOrder()">Забронювати замовлення</button>
+            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Закрити</button>
         </div>
     </div>
 
@@ -201,9 +200,9 @@
         document.getElementById('bookingCheckbox').addEventListener('change', function(e) {
             let submitBtn = document.getElementById('submitOrderBtn');
             if (e.target.checked) {
-                submitBtn.innerText = "Забронировать заказ";
+                submitBtn.innerText = "Забронювати замовлення";
             } else {
-                submitBtn.innerText = "Подтвердить заказ";
+                submitBtn.innerText = "Підтвердити замовлення";
             }
         });
 
@@ -246,7 +245,7 @@
             let totalCount = cart.length;
             if (totalCount > 0) {
                 let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
-                mainButton.setText(`🛒 Оформить заказ (${totalCount}) • ${totalPrice} грн`);
+                mainButton.setText(`🛒 Оформити замовлення (${totalCount}) • ${totalPrice} грн`);
                 mainButton.show();
             } else {
                 mainButton.hide();
@@ -263,7 +262,7 @@
 
             if (btnElement) {
                 let orig = btnElement.innerText;
-                btnElement.innerText = "✓ В корзине";
+                btnElement.innerText = "✓ У кошику";
                 btnElement.style.background = "var(--green)";
                 setTimeout(() => {
                     btnElement.innerText = orig;
@@ -303,7 +302,7 @@
                     <b>${i.price} грн</b>
                     <button class="delete-btn" onclick="removeFromCart(${index})">✕</button>
                 </div>
-            `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Итого: ${totalPrice} грн</div>`;
+            `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Разом: ${totalPrice} грн</div>`;
 
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
@@ -331,7 +330,7 @@
                         let res = await fetch(`/api/accessories?model=${encodeURIComponent(m.clean)}`);
                         let accessories = await res.json();
                         if (accessories && accessories.length > 0) {
-                            htmlBuffer += `<div class="phone-group-title">📱 К модели ${m.raw}:</div>`;
+                            htmlBuffer += `<div class="phone-group-title">📱 До моделі ${m.raw}:</div>`;
                             htmlBuffer += accessories.map(acc => `
                                 <div class="rec-item">
                                     <span>${acc.Название}</span>
@@ -360,16 +359,16 @@
             let isBooking = document.getElementById('bookingCheckbox').checked;
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
 
-            if (!name) { alert('Пожалуйста, введите ваше имя!'); return; }
-            if (digitsOnly.length !== 9) { alert('Пожалуйста, введите корректный номер (9 цифр после +380)!'); return; }
+            if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
+            if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
             
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ items: cart, name: name, phone: phoneInput, is_booking: isBooking })
             }).then(() => { 
                 let msg = isBooking 
-                    ? 'Ваш товар успешно забронирован на 24 часа! Ждём вас в магазине.' 
-                    : 'Спасибо! Ваш заказ принят.';
+                    ? 'Ваш товар успішно заброньовано на 24 години! Чекаємо на вас у магазині.' 
+                    : 'Дякуємо! Ваше замовлення прийнято.';
                 alert(msg); 
                 localStorage.removeItem('cart'); 
                 cart = []; 
