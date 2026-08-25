@@ -15,6 +15,7 @@
             --red: #ff3b30;
             --green: #34c759;
             --orange: #ff9500;
+            --gray: #8e8e93;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; padding-bottom: 70px; }
         h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
@@ -29,6 +30,16 @@
         .badge-hit { background: var(--red); }
         .badge-new { background: var(--green); }
         .badge-sale { background: var(--orange); }
+
+        /* Статусы наличия */
+        .stock-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-bottom: 8px; padding: 4px 8px; border-radius: 6px; }
+        .status-in-stock { color: #155724; background-color: #d4edda; }
+        .status-out-stock { color: #721c24; background-color: #f8d7da; }
+        .status-order { color: #856404; background-color: #fff3cd; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-green { background: var(--green); }
+        .dot-red { background: var(--red); }
+        .dot-orange { background: var(--orange); }
 
         .product-img { width: 100%; height: 200px; object-fit: contain; margin-bottom: 12px; background: transparent; padding: 5px; box-sizing: border-box; border: none; }
         .product-title { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
@@ -45,6 +56,7 @@
         .price-select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 10px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; outline: none; box-sizing: border-box; }
         .buy-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 15px; transition: transform 0.1s ease; }
         .buy-btn:active { transform: scale(0.97); }
+        .buy-btn:disabled { background: var(--gray); cursor: not-allowed; opacity: 0.6; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
@@ -73,15 +85,29 @@
 
         {% for p in products %}
         {% set outer_index = loop.index %}
+        {% set status_str = p.Статус|string|lower %}
         <div class="product-card" id="card-{{ outer_index }}">
+            
+            <!-- Маркеры "Хит / NEW / Скидка" -->
             {% if p.Статус and p.Статус != '-' %}
-                {% set st = p.Статус|string|lower %}
-                {% if 'хит' in st or 'hit' in st %}<div class="badge badge-hit">🔥 ХИТ</div>
-                {% elif 'new' in st or 'нов' in st %}<div class="badge badge-new">✨ NEW</div>
-                {% else %}<div class="badge badge-sale">🏷️ {{ p.Статус }}</div>{% endif %}
+                {% if 'хит' in status_str or 'hit' in status_str %}<div class="badge badge-hit">🔥 ХИТ</div>
+                {% elif 'new' in status_str or 'нов' in status_str %}<div class="badge badge-new">✨ NEW</div>
+                {% elif 'акция' in status_str or 'скидк' in status_str %}<div class="badge badge-sale">🏷️ СКИДКА</div>{% endif %}
             {% endif %}
 
             {% if p.Фото %}<img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">{% endif %}
+
+            <!-- Живой статус наличия -->
+            {% if 'нет' in status_str or 'закончил' in status_str or 'отсутств' in status_str %}
+                <div class="stock-status status-out-stock"><span class="status-dot dot-red"></span> Нет в наличии</div>
+                {% set is_out_of_stock = true %}
+            {% elif 'заказ' in status_str %}
+                <div class="stock-status status-order"><span class="status-dot dot-orange"></span> Под заказ (1-2 дня)</div>
+                {% set is_out_of_stock = false %}
+            {% else %}
+                <div class="stock-status status-in-stock"><span class="status-dot dot-green"></span> В наличии в магазине</div>
+                {% set is_out_of_stock = false %}
+            {% endif %}
 
             <div class="product-title" id="title-{{ outer_index }}">{{ p.Название }}</div>
             <div class="product-desc">{{ p.Описание }}</div>
@@ -106,7 +132,12 @@
                 </div>
 
                 <div class="product-price" id="price-display-{{ outer_index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
-                <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">В корзину</button>
+                
+                {% if is_out_of_stock %}
+                    <button class="buy-btn" disabled>Нет в наличии</button>
+                {% else %}
+                    <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">В корзину</button>
+                {% endif %}
 
             {% elif 'матовая' in p.Название.lower() %}
                 <select id="select-{{ outer_index }}" class="price-select">
@@ -122,7 +153,11 @@
                 <button class="buy-btn" onclick="addWithOptions('{{ p.Название }}', 'select-{{ outer_index }}', this)">В корзину</button>
             {% else %}
                 <div class="product-price">{{ p.Цена }} грн</div>
-                <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">В корзину</button>
+                {% if is_out_of_stock %}
+                    <button class="buy-btn" disabled>Нет в наличии</button>
+                {% else %}
+                    <button class="buy-btn" onclick="addToCart('{{ p.Название }}', '{{ p.Цена }}', this)">В корзину</button>
+                {% endif %}
             {% endif %}
         </div>
         {% endfor %}
