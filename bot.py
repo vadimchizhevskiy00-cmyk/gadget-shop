@@ -215,11 +215,11 @@ def handle_callbacks(call):
 if __name__ == "__main__":
     print("Удаляем старый вебхук...")
     try:
-        # Безопасный сброс вебхука без конфликтующих аргументов
+        # Обычный вызов без параметров работает абсолютно во всех версиях
         bot.remove_webhook()
     except Exception as e:
         print(f"Предупреждение webhook: {e}")
 
-    print("Запускаем бота...")
-    # skip_pending=True автоматически сбросит все старые накопленные сообщения
+    print("Бот успешно запущен!")
+    # skip_pending=True берёт на себя очистку всех застрявших сообщений
     bot.infinity_polling(skip_pending=True)
