@@ -129,6 +129,7 @@
                     {% if p.Экран and p.Экран != '-' %}<div class="spec-tag">🖥️ {{ p.Экран }}</div>{% endif %}
                     {% if p.Камера and p.Камера != '-' %}<div class="spec-tag">📸 {{ p.Камера }}</div>{% endif %}
                     {% if p.Батарея and p.Батарея != '-' %}<div class="spec-tag">🔋 {{ p.Батарея }}</div>{% endif %}
+                    {% if p.Мощность and p.Мощность != '-' %}<div class="spec-tag">⚡ {{ p.Мощность }}</div>{% endif %}
                 </div>
 
                 <div class="product-price" id="price-display-{{ outer_index }}">{{ p.price_list[0] if p.price_list|length > 0 else p.Цена }} грн</div>
