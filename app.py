@@ -168,6 +168,7 @@ def send_order():
 
         req_type = data.get("type", "order")
 
+        # 1. Авто-підписка в 1 клік (Telegram ID)
         if req_type == "subscribe_notify":
             user_chat_id = data.get("chat_id")
             product_name = data.get("product_name")
@@ -177,6 +178,28 @@ def send_order():
                 return jsonify({"status": "success"})
             return jsonify({"status": "error", "message": "Missing params"}), 400
 
+        # 2. Ручна підписка через модальне вікно (Ім'я + Телефон)
+        elif req_type == "notify":
+            product_name = data.get("product_name", "Товар")
+            name = data.get("name", "Не вказано")
+            phone = data.get("phone", "Не вказан")
+            user_chat_id = data.get("chat_id", TELEGRAM_CHAT_ID)
+
+            # Сповіщення менеджеру
+            message = (
+                f"🔔 <b>ЗАЯВКА НА ПОВІДОМЛЕННЯ ПРО ПОЯВУ!</b>\n\n"
+                f"📦 <b>Товар:</b> {product_name}\n"
+                f"👤 <b>Ім'я:</b> {name}\n"
+                f"📞 <b>Телефон:</b> {phone}\n"
+            )
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}, timeout=10)
+
+            # Збереження підписки для сканера
+            save_subscription(user_chat_id, product_name)
+            return jsonify({"status": "success"})
+
+        # 3. Звичайне замовлення або бронювання
         name = data.get("name", "Не вказано")
         phone = data.get("phone", "Не вказан")
         items = data.get("items", [])
