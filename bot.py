@@ -37,7 +37,10 @@ def check_stock_and_notify():
                     subs = json.load(f)
 
                 if subs and CSV_URL and "http" in CSV_URL:
-                    res = requests.get(CSV_URL, timeout=10)
+                    # Скидаємо кєш Google Таблиць за допомогою _nocache
+                    fresh_csv_url = f"{CSV_URL}&_nocache={int(time.time())}"
+                    res = requests.get(fresh_csv_url, timeout=10)
+                    
                     if res.status_code == 200:
                         csv_data = io.StringIO(res.text)
                         df = pd.read_csv(csv_data).fillna("-")
@@ -47,18 +50,24 @@ def check_stock_and_notify():
 
                         for sub in subs:
                             c_id = sub.get("chat_id")
-                            p_name = sub.get("product_name")
+                            p_name = sub.get("product_name", "")
+                            
+                            # Очищаємо назву підписки від дужок (наприклад, "iPhone 15 (128GB)" -> "iphone 15")
+                            clean_sub_name = p_name.split("(")[0].strip().lower()
                             notified = False
 
                             for p in products:
-                                title = str(p.get("Название", "")).strip()
+                                title = str(p.get("Название", "")).strip().lower()
                                 status = str(p.get("Статус", "")).strip().lower()
 
-                                if p_name.lower() in title.lower():
+                                # Перевіряємо збіг назв
+                                if (clean_sub_name in title) or (title in clean_sub_name):
+                                    # Перевіряємо, що товар у наявності
                                     if "нет" not in status and "немає" not in status and "закончил" not in status:
                                         try:
                                             kb = types.InlineKeyboardMarkup()
                                             kb.add(types.InlineKeyboardButton("🛍️ Відкрити каталог", web_app=types.WebAppInfo(url=WEB_APP_URL)))
+                                            
                                             bot.send_message(
                                                 c_id,
                                                 f"🎉 <b>Чудова новина!</b>\n\n"
@@ -68,6 +77,7 @@ def check_stock_and_notify():
                                                 reply_markup=kb
                                             )
                                             notified = True
+                                            print(f"[SUCCESS] Сповіщення про товар «{p_name}» успішно надіслано користувачу {c_id}")
                                         except Exception as err:
                                             print(f"Помилка надсилання сповіщення: {err}")
                                         break
@@ -75,12 +85,14 @@ def check_stock_and_notify():
                             if not notified:
                                 remaining_subs.append(sub)
 
+                        # Перезаписуємо список підписок
                         with open(SUBS_FILE, "w", encoding="utf-8") as f:
                             json.dump(remaining_subs, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Помилка у фоновому сканері: {e}")
 
-        time.sleep(600)  # Перевіряти кожні 10 хвилин
+        # Перевірка щохвилини
+        time.sleep(60)
 
 
 threading.Thread(target=check_stock_and_notify, daemon=True).start()
@@ -217,10 +229,11 @@ def handle_callbacks(call):
 
 
 if __name__ == "__main__":
+    print("Очищаємо вебхуки та чергу повідомлень...")
     try:
         bot.remove_webhook()
     except Exception:
         pass
 
-    print("Бот запущений...")
+    print("Бот запущений і чекає на команди...")
     bot.infinity_polling(skip_pending=True)
