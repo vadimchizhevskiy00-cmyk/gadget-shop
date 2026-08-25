@@ -31,7 +31,6 @@
         .badge-new { background: var(--green); }
         .badge-sale { background: var(--orange); }
 
-        /* Статусы наличия */
         .stock-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-bottom: 8px; padding: 4px 8px; border-radius: 6px; }
         .status-in-stock { color: #155724; background-color: #d4edda; }
         .status-out-stock { color: #721c24; background-color: #f8d7da; }
@@ -64,6 +63,10 @@
         .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
 
+        /* Блок выбора бронирования */
+        .booking-box { background: var(--secondary); padding: 12px; border-radius: 12px; margin: 12px 0; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid var(--accent); }
+        .booking-box input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
         .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
         .phone-group-title { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 3px; }
         .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
@@ -88,7 +91,6 @@
         {% set status_str = p.Статус|string|lower %}
         <div class="product-card" id="card-{{ outer_index }}">
             
-            <!-- Маркеры "Хит / NEW / Скидка" -->
             {% if p.Статус and p.Статус != '-' %}
                 {% if 'хит' in status_str or 'hit' in status_str %}<div class="badge badge-hit">🔥 ХИТ</div>
                 {% elif 'new' in status_str or 'нов' in status_str %}<div class="badge badge-new">✨ NEW</div>
@@ -97,7 +99,6 @@
 
             {% if p.Фото %}<img src="{{ p.Фото }}" alt="{{ p.Название }}" class="product-img">{% endif %}
 
-            <!-- Живой статус наличия -->
             {% if 'нет' in status_str or 'закончил' in status_str or 'отсутств' in status_str %}
                 <div class="stock-status status-out-stock"><span class="status-dot dot-red"></span> Нет в наличии</div>
                 {% set is_out_of_stock = true %}
@@ -163,18 +164,25 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Модальное окно заказа -->
+    <!-- Модальное окно заказа / брони -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <h3>Ваш заказ</h3>
             <div id="cartItemsList"></div>
+
+            <label class="booking-box">
+                <input type="checkbox" id="bookingCheckbox" checked>
+                <span>📌 Забронировать в магазине на 24 часа</span>
+            </label>
+
             <div id="recommendationsContainer" class="recommendation-box">
                 <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Добавьте к вашим устройствам:</div>
                 <div id="recItemsList"></div>
             </div>
+            
             <input type="text" id="clientName" class="form-input" placeholder="Ваше имя">
             <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
-            <button class="nav-btn" onclick="submitOrder()">Подтвердить заказ</button>
+            <button class="nav-btn" id="submitOrderBtn" onclick="submitOrder()">Забронировать заказ</button>
             <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Закрыть</button>
         </div>
     </div>
@@ -189,6 +197,15 @@
         mainButton.color = tg.themeParams.button_color || "#2481cc";
         
         Telegram.WebApp.onEvent('mainButtonClicked', function(){ openCartModal(); });
+
+        document.getElementById('bookingCheckbox').addEventListener('change', function(e) {
+            let submitBtn = document.getElementById('submitOrderBtn');
+            if (e.target.checked) {
+                submitBtn.innerText = "Забронировать заказ";
+            } else {
+                submitBtn.innerText = "Подтвердить заказ";
+            }
+        });
 
         function selectMemory(cardIdx, memoryVal, priceVal, btnEl) {
             let parent = btnEl.parentElement;
@@ -340,6 +357,7 @@
         function submitOrder() {
             let name = document.getElementById('clientName').value.trim();
             let phoneInput = document.getElementById('clientPhone').value.trim();
+            let isBooking = document.getElementById('bookingCheckbox').checked;
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
 
             if (!name) { alert('Пожалуйста, введите ваше имя!'); return; }
@@ -347,9 +365,12 @@
             
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ items: cart, name: name, phone: phoneInput })
+                body: JSON.stringify({ items: cart, name: name, phone: phoneInput, is_booking: isBooking })
             }).then(() => { 
-                alert('Спасибо! Ваш заказ принят.'); 
+                let msg = isBooking 
+                    ? 'Ваш товар успешно забронирован на 24 часа! Ждём вас в магазине.' 
+                    : 'Спасибо! Ваш заказ принят.';
+                alert(msg); 
                 localStorage.removeItem('cart'); 
                 cart = []; 
                 updateUI(); 
