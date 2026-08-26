@@ -140,7 +140,7 @@
                     <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.Название }}', '{{ outer_index }}', this)">У кошик</button>
                 {% endif %}
 
-            {% elif category.lower() in ['пленки', 'плівки', 'стекла', 'захисне скло'] or '/' in p.Цена|string or '-' in p.Цена|string %}
+            {% elif category.lower() in ['пленки', 'плівки'] or '/' in p.Цена|string or '-' in p.Цена|string %}
                 {% if 'матовая' in p.Название.lower() or 'матова' in p.Название.lower() %}
                     <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'">
                         <option value="400">Матова (Антиблік) — 400 грн</option>
