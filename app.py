@@ -9,7 +9,7 @@ import requests
 import telebot
 from telebot import types
 
-# === НАСТРОЙКИ И ПЕРЕМЕННЫЕ ===
+# === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
 WEB_APP_URL = os.environ.get(
@@ -23,11 +23,7 @@ CSV_URL = os.environ.get(
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
-# Хранилище временного выбора пользователя при примерке чехла
-fitting_room_data = {}
 
-
-# === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 def clean_val(val):
     if val is None:
         return ""
@@ -76,7 +72,7 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === ЛОГИКА ТЕЛЕГРАМ БОТА (TELEBOT) ===
+# === ЛОГИКА ТЕЛЕГРАМ БОТА ===
 
 
 @bot.message_handler(commands=["start"])
@@ -85,8 +81,7 @@ def start_cmd(message):
         web_app = types.WebAppInfo(url=WEB_APP_URL)
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
-            types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app),
-            types.KeyboardButton(text="📸 Приміряти чохол"),
+            types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
         )
         reply_kb.add(
             types.KeyboardButton(text="📍 Магазин та контакти"),
@@ -101,145 +96,6 @@ def start_cmd(message):
         bot.send_message(message.chat.id, welcome_text, reply_markup=reply_kb)
     except Exception as e:
         print(f"Помилка /start: {e}", file=sys.stderr)
-
-
-@bot.message_handler(func=lambda msg: msg.text == "📸 Приміряти чохол")
-def start_fitting(message):
-    fitting_room_data[message.chat.id] = {}
-
-    kb = types.InlineKeyboardMarkup()
-    kb.add(
-        types.InlineKeyboardButton(
-            "📱 iPhone 13 / 14", callback_data="fit_model_iphone13_14"
-        )
-    )
-    kb.add(
-        types.InlineKeyboardButton(
-            "📱 iPhone 15 / 15 Pro", callback_data="fit_model_iphone15"
-        )
-    )
-    kb.add(
-        types.InlineKeyboardButton(
-            "📱 iPhone 16 / 16 Pro", callback_data="fit_model_iphone16"
-        )
-    )
-
-    bot.send_message(
-        message.chat.id,
-        "📸 <b>Віртуальна примірочна чохлів!</b>\n\nОберіть модель вашого смартфона:",
-        parse_mode="HTML",
-        reply_markup=kb,
-    )
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("fit_"))
-def handle_fitting_callbacks(call):
-    chat_id = call.message.chat.id
-    message_id = call.message.message_id
-    data = call.data
-
-    if data.startswith("fit_model_"):
-        model_code = data.replace("fit_model_", "")
-        fitting_room_data[chat_id] = {"model": model_code}
-
-        kb = types.InlineKeyboardMarkup()
-        kb.add(
-            types.InlineKeyboardButton(
-                "⚫ Black / Midnight", callback_data="fit_color_black"
-            ),
-            types.InlineKeyboardButton(
-                "⚪ White / Silver", callback_data="fit_color_white"
-            ),
-        )
-        kb.add(
-            types.InlineKeyboardButton(
-                "🩶 Natural Titanium", callback_data="fit_color_gray"
-            ),
-            types.InlineKeyboardButton(
-                "🔵 Blue / Pacific", callback_data="fit_color_blue"
-            ),
-        )
-        bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=message_id,
-            text="<b>Крок 2:</b> Вкажіть колір корпусу вашого пристрою:",
-            parse_mode="HTML",
-            reply_markup=kb,
-        )
-
-    elif data.startswith("fit_color_"):
-        color_code = data.replace("fit_color_", "")
-        if chat_id in fitting_room_data:
-            fitting_room_data[chat_id]["color"] = color_code
-
-        kb = types.InlineKeyboardMarkup()
-        kb.add(
-            types.InlineKeyboardButton(
-                "💎 Прозорий Silicone Case z MagSafe",
-                callback_data="fit_case_clear",
-            )
-        )
-        kb.add(
-            types.InlineKeyboardButton(
-                "🖤 Чорний Soft-Touch Silicone",
-                callback_data="fit_case_black",
-            )
-        )
-        kb.add(
-            types.InlineKeyboardButton(
-                "🤎 Шкіряний Leather Case", callback_data="fit_case_leather"
-            )
-        )
-
-        bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=message_id,
-            text="<b>Крок 3:</b> Який чохол приміряємо?",
-            parse_mode="HTML",
-            reply_markup=kb,
-        )
-
-    elif data.startswith("fit_case_"):
-        case_type = data.replace("fit_case_", "")
-        user_fit = fitting_room_data.get(chat_id, {})
-        model = user_fit.get("model", "iphone")
-        color = user_fit.get("color", "black")
-
-        sample_photos = {
-            "clear": "https://images.unsplash.com/photo-1603313011101-320f26a4f6f6?w=600",
-            "black": "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600",
-            "leather": "https://images.unsplash.com/photo-1541877944-ac82a091518a?w=600",
-        }
-        photo_url = sample_photos.get(case_type, sample_photos["clear"])
-
-        kb = types.InlineKeyboardMarkup()
-        catalog_url = f"{WEB_APP_URL}/?category=Чехлы"
-        kb.add(
-            types.InlineKeyboardButton(
-                "🛍️ Забронювати цей чохол",
-                web_app=types.WebAppInfo(url=catalog_url),
-            )
-        )
-        kb.add(
-            types.InlineKeyboardButton(
-                "🔄 Приміряти інший варіант",
-                callback_data="fit_model_iphone15",
-            )
-        )
-
-        bot.delete_message(chat_id=chat_id, message_id=message_id)
-        bot.send_photo(
-            chat_id=chat_id,
-            photo=photo_url,
-            caption=(
-                f"✨ <b>Ось як це буде виглядати!</b>\n\n"
-                f"📱 <b>Пристрій:</b> {model.upper()} ({color.capitalize()})\n"
-                f"🛡️ <b>Чохол:</b> {case_type.capitalize()} Edition\n\n"
-                f"💡 <i>Усі чохли мають ідеальну посадку та захист бортів камери.</i>"
-            ),
-            parse_mode="HTML",
-            reply_markup=kb,
-        )
 
 
 @bot.message_handler(func=lambda msg: msg.text == "📍 Магазин та контакти")
@@ -266,7 +122,7 @@ def faq_cmd(message):
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
 
-# === МАРШРУТЫ FLASK (ВЕБ-ПРИЛОЖЕНИЕ) ===
+# === FLASK РУТЫ ===
 
 
 @app.route("/")
@@ -395,7 +251,6 @@ def order():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Запуск бота в отдельном потоке, чтобы он не блокировал Flask веб-сервер
 def run_bot():
     try:
         bot.infinity_polling(skip_pending=True)
