@@ -54,7 +54,7 @@ def get_products():
             clean_row["memory_list"] = m_list
             clean_row["price_list"] = p_list
 
-            # Чёткая привязка и очистка характеристик
+            # Привязка характеристик
             clean_row["Процессор"] = clean_val(clean_row.get("Процессор", "-"))
             clean_row["Мощность"] = clean_val(clean_row.get("Мощность", "-"))
             clean_row["Экран"] = clean_val(clean_row.get("Экран", "-"))
@@ -80,7 +80,7 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === ЛОГИКА ТЕЛЕГРАМ БОТА ===
+# === ТЕЛЕГРАМ БОТ ===
 
 
 @bot.message_handler(commands=["start"])
@@ -109,12 +109,11 @@ def start_cmd(message):
 @bot.message_handler(func=lambda msg: msg.text == "📍 Магазин та контакти")
 def contacts_cmd(message):
     text = (
-# Контакты и адрес вашего физического магазина
-SHOP_ADDRESS = "м. Чугуїв, бул. Центральний, 8"  # Укажите ваш адрес
-SHOP_HOURS = "Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00"
-SHOP_PHONE = "+380 97 391 64 00, +380 63 189 16 83"  # Укажите ваш телефон
-MANAGER_USERNAME = "smthwrng121"  # Telegram юзернейм менеджера без @
-GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/RukWZ1QBZbQQsqnA9"  # Ссылка на вашу точку на Google Maps
+        "📍 <b>Наш магазин чекає на вас!</b>\n\n"
+        "🏢 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
+        "⏰ <b>Графік роботи:</b> Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
+        "📞 <b>Телефон:</b> +380 97 391 64 00, +380 63 189 16 83\n"
+        "💬 <b>Менеджер:</b> @linasens228"
     )
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
