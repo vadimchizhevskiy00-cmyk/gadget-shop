@@ -53,6 +53,14 @@ def get_products():
             )
             clean_row["memory_list"] = m_list
             clean_row["price_list"] = p_list
+
+            # Чёткая привязка и очистка характеристик
+            clean_row["Процессор"] = clean_val(clean_row.get("Процессор", "-"))
+            clean_row["Мощность"] = clean_val(clean_row.get("Мощность", "-"))
+            clean_row["Экран"] = clean_val(clean_row.get("Экран", "-"))
+            clean_row["Камера"] = clean_val(clean_row.get("Камера", "-"))
+            clean_row["Батарея"] = clean_val(clean_row.get("Батарея", "-"))
+
             products.append(clean_row)
 
         return products
@@ -101,11 +109,12 @@ def start_cmd(message):
 @bot.message_handler(func=lambda msg: msg.text == "📍 Магазин та контакти")
 def contacts_cmd(message):
     text = (
-        "📍 <b>Наш магазин чекає на вас!</b>\n\n"
-        "🏢 <b>Адреса:</b> м. Київ, вул. Хрещатик, 1\n"
-        "⏰ <b>Графік роботи:</b> Щодня з 10:00 до 20:00\n"
-        "📞 <b>Телефон:</b> +380 99 123 45 67\n"
-        "💬 <b>Менеджер:</b> @manager_username"
+# Контакты и адрес вашего физического магазина
+SHOP_ADDRESS = "м. Чугуїв, бул. Центральний, 8"  # Укажите ваш адрес
+SHOP_HOURS = "Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00"
+SHOP_PHONE = "+380 97 391 64 00, +380 63 189 16 83"  # Укажите ваш телефон
+MANAGER_USERNAME = "smthwrng121"  # Telegram юзернейм менеджера без @
+GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/RukWZ1QBZbQQsqnA9"  # Ссылка на вашу точку на Google Maps
     )
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
@@ -117,7 +126,9 @@ def faq_cmd(message):
         "1️⃣ <b>Чи є гарантія на техніку?</b>\n"
         "— Так! На нову техніку діє гарантія 12 місяців, на б/в — від 3 місяців.\n\n"
         "2️⃣ <b>Як працює бронювання?</b>\n"
-        "— Ви обираєте товар у веб-каталозі, тиснете «Забронювати», і ми відкладаємо його для вас на 24 години."
+        "— Ви обираєте товар у веб-каталозі, тиснете «Забронювати», і ми відкладаємо його для вас на 24 години.\n\n"
+        "3️⃣ <b>Чи допомагаєте з налаштуванням та переносом даних?</b>\n"
+        "— Так, наші спеціалісти допоможуть перенести всі ваші контакти, фото та додатки на новий пристрій при покупці у магазині."
     )
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
