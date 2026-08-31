@@ -9,7 +9,7 @@ import requests
 import telebot
 from telebot import types
 
-# === НАСТРОЙКИ ===
+# === НАСТРОЙКИ ПЕРЕМЕННЫХ ===
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
 WEB_APP_URL = os.environ.get(
@@ -54,7 +54,7 @@ def get_products():
             clean_row["memory_list"] = m_list
             clean_row["price_list"] = p_list
 
-            # Привязка характеристик
+            # Характеристики устройства
             clean_row["Процессор"] = clean_val(clean_row.get("Процессор", "-"))
             clean_row["Мощность"] = clean_val(clean_row.get("Мощность", "-"))
             clean_row["Экран"] = clean_val(clean_row.get("Экран", "-"))
@@ -80,7 +80,7 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === ТЕЛЕГРАМ БОТ ===
+# === ТЕЛЕГРАМ БОТ (TELEBOT) ===
 
 
 @bot.message_handler(commands=["start"])
@@ -113,7 +113,7 @@ def contacts_cmd(message):
         "🏢 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
         "⏰ <b>Графік роботи:</b> Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
         "📞 <b>Телефон:</b> +380 97 391 64 00, +380 63 189 16 83\n"
-        "💬 <b>Менеджер:</b> @linasens228"
+        "💬 <b>Менеджер:</b> @smthwrng121"
     )
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
@@ -132,7 +132,7 @@ def faq_cmd(message):
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
 
-# === FLASK РУТЫ ===
+# === FLASK МАРШРУТЫ ===
 
 
 @app.route("/")
