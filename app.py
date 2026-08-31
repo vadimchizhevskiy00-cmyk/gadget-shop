@@ -86,13 +86,22 @@ def send_telegram_msg(chat_id, text):
 @bot.message_handler(commands=["start"])
 def start_cmd(message):
     try:
-        web_app = types.WebAppInfo(url=WEB_APP_URL)
+        # 1. Принудительно сбрасываем старую клавиатуру Telegram
+        hide_kb = types.ReplyKeyboardRemove()
+        bot.send_message(
+            message.chat.id, "Обновляем меню...", reply_markup=hide_kb
+        )
 
-        # Клавиатура из 3 кнопок без лишних пунктов
+        # 2. Формируем актуальное меню из 3 кнопок
+        web_app = types.WebAppInfo(url=WEB_APP_URL)
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+        # Ряд 1: Только каталог
         reply_kb.add(
             types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
         )
+
+        # Ряд 2: Контакты и FAQ
         reply_kb.add(
             types.KeyboardButton(text="📍 Магазин та контакти"),
             types.KeyboardButton(text="❓ Часті запитання (FAQ)"),
@@ -106,7 +115,6 @@ def start_cmd(message):
         bot.send_message(message.chat.id, welcome_text, reply_markup=reply_kb)
     except Exception as e:
         print(f"Помилка /start: {e}", file=sys.stderr)
-
 
 @bot.message_handler(func=lambda msg: msg.text == "📍 Магазин та контакти")
 def contacts_cmd(message):
