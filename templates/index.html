@@ -225,6 +225,7 @@
                 </div>
                 {% endif %}
 
+                <!-- Характеристики смартфона (с процессором) -->
                 <div class="specs-container">
                     {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag">🖥️ {{ p.get('Экран') }}</div>{% endif %}
                     {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag">🧠 {{ p.get('Процессор') }}</div>{% endif %}
