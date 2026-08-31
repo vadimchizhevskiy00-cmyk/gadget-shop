@@ -87,6 +87,8 @@ def send_telegram_msg(chat_id, text):
 def start_cmd(message):
     try:
         web_app = types.WebAppInfo(url=WEB_APP_URL)
+
+        # Клавиатура из 3 кнопок без лишних пунктов
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
