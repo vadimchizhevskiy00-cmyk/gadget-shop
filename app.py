@@ -1,8 +1,10 @@
 import csv
 import io
+import json
 import os
 import sys
 import threading
+import time
 import traceback
 from flask import Flask, jsonify, render_template, request
 import requests
@@ -20,8 +22,30 @@ CSV_URL = os.environ.get(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv",
 )
 
+SUBS_FILE = "subscriptions.json"
+
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
+
+
+# === РАБОТА С ФАЙЛОМ ПОДПИСОК ===
+def load_subscriptions():
+    if not os.path.exists(SUBS_FILE):
+        return []
+    try:
+        with open(SUBS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading subs: {e}", file=sys.stderr)
+        return []
+
+
+def save_subscriptions(subs):
+    try:
+        with open(SUBS_FILE, "w", encoding="utf-8") as f:
+            json.dump(subs, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving subs: {e}", file=sys.stderr)
 
 
 def clean_val(val):
@@ -54,7 +78,6 @@ def get_products():
             clean_row["memory_list"] = m_list
             clean_row["price_list"] = p_list
 
-            # Характеристики устройства
             clean_row["Процессор"] = clean_val(clean_row.get("Процессор", "-"))
             clean_row["Мощность"] = clean_val(clean_row.get("Мощность", "-"))
             clean_row["Экран"] = clean_val(clean_row.get("Экран", "-"))
@@ -80,15 +103,62 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
+# === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (КАЖДЫЕ 5 МИНУТ) ===
+def check_stock_subscriptions():
+    while True:
+        try:
+            time.sleep(300)  # Проверка каждые 5 минут (300 секунд)
+            subs = load_subscriptions()
+            if not subs:
+                continue
+
+            products = get_products()
+            if not products:
+                continue
+
+            # Составляем карту статусов товаров
+            stock_map = {}
+            for p in products:
+                name = clean_val(p.get("Название", ""))
+                status = clean_val(p.get("Статус", "")).lower()
+                stock_map[name] = status
+
+            remaining_subs = []
+            updated = False
+
+            for sub in subs:
+                p_name = sub.get("product_name")
+                chat_id = sub.get("chat_id")
+                status = stock_map.get(p_name, "")
+
+                # Если товар появился в наличии (статус НЕ содержит "нет"/"немає")
+                is_out = any(
+                    kw in status for kw in ["нет", "немає", "закончил"]
+                )
+
+                if status and not is_out:
+                    msg = (
+                        f"🎉 <b>Чудові новини! Товар з'явився в наявності!</b>\n\n"
+                        f"📦 <b>{p_name}</b> вже чекає на вас у нашому магазині!\n\n"
+                        f"Завітайте до нас або забронюйте товар у каталозі прямо зараз. 📱"
+                    )
+                    send_telegram_msg(chat_id, msg)
+                    updated = True
+                else:
+                    remaining_subs.append(sub)
+
+            if updated:
+                save_subscriptions(remaining_subs)
+
+        except Exception as e:
+            print(f"Error in stock checker thread: {e}", file=sys.stderr)
+
+
 # === ТЕЛЕГРАМ БОТ ===
-
-
 @bot.message_handler(commands=["start"])
 def start_cmd(message):
     try:
         web_app = types.WebAppInfo(url=WEB_APP_URL)
-
-        # Клавиатура ровно из 3 кнопок
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
@@ -135,8 +205,6 @@ def faq_cmd(message):
 
 
 # === FLASK РУТЫ ===
-
-
 @app.route("/")
 def index():
     try:
@@ -206,28 +274,38 @@ def order():
         data = request.json or {}
         req_type = data.get("type", "order")
 
-        if req_type == "subscribe_notify":
+        if req_type in ["subscribe_notify", "notify"]:
             chat_id = data.get("chat_id")
             product_name = data.get("product_name")
+            name = data.get("name", "Клієнт")
+            phone = data.get("phone", "-")
 
-            admin_msg = (
-                f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
-                f"📦 <b>Товар:</b> {product_name}\n"
-                f"👤 <b>Chat ID:</b> {chat_id}"
-            )
-            send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
-            return jsonify({"status": "ok"})
+            # 1. Записываем подписку в JSON для автоматической проверки
+            if chat_id:
+                subs = load_subscriptions()
+                # Проверяем, нет ли дубликата
+                if not any(
+                    s.get("chat_id") == chat_id
+                    and s.get("product_name") == product_name
+                    for s in subs
+                ):
+                    subs.append(
+                        {
+                            "chat_id": chat_id,
+                            "product_name": product_name,
+                            "name": name,
+                            "phone": phone,
+                        }
+                    )
+                    save_subscriptions(subs)
 
-        elif req_type == "notify":
-            product_name = data.get("product_name")
-            name = data.get("name")
-            phone = data.get("phone")
-
+            # 2. Уведомляем админа
             admin_msg = (
                 f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
                 f"📦 <b>Товар:</b> {product_name}\n"
                 f"👤 <b>Клієнт:</b> {name}\n"
-                f"📞 <b>Телефон:</b> {phone}"
+                f"📞 <b>Телефон:</b> {phone}\n"
+                f"💬 <b>Chat ID:</b> {chat_id or 'Немає'}"
             )
             send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
             return jsonify({"status": "ok"})
@@ -271,8 +349,15 @@ def run_bot():
 
 
 if __name__ == "__main__":
+    # Запуск бота в отдельном потоке
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
+
+    # Запуск фоновой проверки наличия товаров каждые 5 минут
+    checker_thread = threading.Thread(
+        target=check_stock_subscriptions, daemon=True
+    )
+    checker_thread.start()
 
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
