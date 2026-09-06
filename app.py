@@ -28,7 +28,7 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
 
-# === РАБОТА С ФАЙЛОМ ПОДПИСОК ===
+# === ХРАНИЛИЩЕ ПОДПИСОК ===
 def load_subscriptions():
     if not os.path.exists(SUBS_FILE):
         return []
@@ -103,11 +103,11 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (КАЖДЫЕ 5 МИНУТ) ===
+# === БЫСТРЫЙ ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
 def check_stock_subscriptions():
     while True:
         try:
-            time.sleep(300)  # Проверка каждые 5 минут (300 секунд)
+            time.sleep(15)  # Проверяем каждые 15 секунд, как раньше!
             subs = load_subscriptions()
             if not subs:
                 continue
@@ -116,30 +116,34 @@ def check_stock_subscriptions():
             if not products:
                 continue
 
-            # Составляем карту статусов товаров
-            stock_map = {}
-            for p in products:
-                name = clean_val(p.get("Название", ""))
-                status = clean_val(p.get("Статус", "")).lower()
-                stock_map[name] = status
-
             remaining_subs = []
             updated = False
 
             for sub in subs:
-                p_name = sub.get("product_name")
+                p_name = sub.get("product_name", "").strip().lower()
                 chat_id = sub.get("chat_id")
-                status = stock_map.get(p_name, "")
 
-                # Если товар появился в наличии (статус НЕ содержит "нет"/"немає")
-                is_out = any(
-                    kw in status for kw in ["нет", "немає", "закончил"]
-                )
+                found_and_in_stock = False
+                matched_title = ""
 
-                if status and not is_out:
+                for p in products:
+                    prod_title = clean_val(p.get("Название", "")).strip().lower()
+                    status = clean_val(p.get("Статус", "")).strip().lower()
+
+                    # Сравниваем названия (учитываем вариант с памятью в скобках)
+                    if prod_title in p_name or p_name in prod_title:
+                        is_out = any(
+                            kw in status for kw in ["нет", "немає", "закончил"]
+                        )
+                        if not is_out:
+                            found_and_in_stock = True
+                            matched_title = p.get("Название", "")
+                            break
+
+                if found_and_in_stock:
                     msg = (
                         f"🎉 <b>Чудові новини! Товар з'явився в наявності!</b>\n\n"
-                        f"📦 <b>{p_name}</b> вже чекає на вас у нашому магазині!\n\n"
+                        f"📦 <b>{matched_title}</b> вже чекає на вас у нашому магазині!\n\n"
                         f"Завітайте до нас або забронюйте товар у каталозі прямо зараз. 📱"
                     )
                     send_telegram_msg(chat_id, msg)
@@ -151,7 +155,7 @@ def check_stock_subscriptions():
                 save_subscriptions(remaining_subs)
 
         except Exception as e:
-            print(f"Error in stock checker thread: {e}", file=sys.stderr)
+            print(f"Error in stock checker: {e}", file=sys.stderr)
 
 
 # === ТЕЛЕГРАМ БОТ ===
@@ -280,10 +284,9 @@ def order():
             name = data.get("name", "Клієнт")
             phone = data.get("phone", "-")
 
-            # 1. Записываем подписку в JSON для автоматической проверки
+            # 1. Записываем подписку
             if chat_id:
                 subs = load_subscriptions()
-                # Проверяем, нет ли дубликата
                 if not any(
                     s.get("chat_id") == chat_id
                     and s.get("product_name") == product_name
@@ -299,7 +302,7 @@ def order():
                     )
                     save_subscriptions(subs)
 
-            # 2. Уведомляем админа
+            # 2. Уведомление для админа
             admin_msg = (
                 f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
                 f"📦 <b>Товар:</b> {product_name}\n"
@@ -349,11 +352,9 @@ def run_bot():
 
 
 if __name__ == "__main__":
-    # Запуск бота в отдельном потоке
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
 
-    # Запуск фоновой проверки наличия товаров каждые 5 минут
     checker_thread = threading.Thread(
         target=check_stock_subscriptions, daemon=True
     )
