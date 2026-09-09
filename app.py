@@ -11,7 +11,7 @@ import requests
 import telebot
 from telebot import types
 
-# === НАСТРОЙКИ ПЕРЕМЕННЫХ ===
+# === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
 WEB_APP_URL = os.environ.get(
@@ -103,11 +103,11 @@ def send_telegram_msg(chat_id, text):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === БЫСТРЫЙ ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
+# === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
 def check_stock_subscriptions():
     while True:
         try:
-            time.sleep(15)  # Проверяем каждые 15 секунд, как раньше!
+            time.sleep(15)
             subs = load_subscriptions()
             if not subs:
                 continue
@@ -130,7 +130,6 @@ def check_stock_subscriptions():
                     prod_title = clean_val(p.get("Название", "")).strip().lower()
                     status = clean_val(p.get("Статус", "")).strip().lower()
 
-                    # Сравниваем названия (учитываем вариант с памятью в скобках)
                     if prod_title in p_name or p_name in prod_title:
                         is_out = any(
                             kw in status for kw in ["нет", "немає", "закончил"]
@@ -158,8 +157,8 @@ def check_stock_subscriptions():
             print(f"Error in stock checker: {e}", file=sys.stderr)
 
 
-# === ТЕЛЕГРАМ БОТ ===
-@bot.message_handler(commands=["start"])
+# === ТЕЛЕГРАМ БОТ (ОБРАБОТКА КОМАНД) ===
+@bot.message_handler(commands=["start", "help"])
 def start_cmd(message):
     try:
         web_app = types.WebAppInfo(url=WEB_APP_URL)
@@ -182,19 +181,23 @@ def start_cmd(message):
         print(f"Помилка /start: {e}", file=sys.stderr)
 
 
-@bot.message_handler(func=lambda msg: msg.text == "📍 Магазин та контакти")
+@bot.message_handler(
+    func=lambda msg: msg.text and "Магазин та контакти" in msg.text
+)
 def contacts_cmd(message):
     text = (
         "📍 <b>Наш магазин чекає на вас!</b>\n\n"
         "🏢 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
-        "⏰ <b>Графік роботи:</b> Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
+        "⏰ <b>Графік роботи:</b>Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
         "📞 <b>Телефон:</b> +380 97 391 64 00, +380 63 189 16 83\n"
         "💬 <b>Менеджер:</b> @smthwrng121"
     )
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
 
-@bot.message_handler(func=lambda msg: msg.text == "❓ Часті запитання (FAQ)")
+@bot.message_handler(
+    func=lambda msg: msg.text and "Часті запитання" in msg.text
+)
 def faq_cmd(message):
     text = (
         "❓ <b>Часті запитання:</b>\n\n"
@@ -284,7 +287,6 @@ def order():
             name = data.get("name", "Клієнт")
             phone = data.get("phone", "-")
 
-            # 1. Записываем подписку
             if chat_id:
                 subs = load_subscriptions()
                 if not any(
@@ -302,7 +304,6 @@ def order():
                     )
                     save_subscriptions(subs)
 
-            # 2. Уведомление для админа
             admin_msg = (
                 f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
                 f"📦 <b>Товар:</b> {product_name}\n"
@@ -344,21 +345,24 @@ def order():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-def run_bot():
-    try:
-        bot.infinity_polling(skip_pending=True)
-    except Exception as e:
-        print(f"Bot error: {e}", file=sys.stderr)
+# === ЗАПУСК И ОБРАБОТКА ПОТОКОВ ===
+def start_bot_polling():
+    while True:
+        try:
+            bot.remove_webhook()
+            print("Запуск polling бота...", file=sys.stderr)
+            bot.infinity_polling(
+                timeout=20, long_polling_timeout=10, skip_pending=True
+            )
+        except Exception as e:
+            print(f"Ошибка polling: {e}. Перезапуск...", file=sys.stderr)
+            time.sleep(3)
 
+
+# Запускаем фоновые задачи до вызова Flask
+threading.Thread(target=start_bot_polling, daemon=True).start()
+threading.Thread(target=check_stock_subscriptions, daemon=True).start()
 
 if __name__ == "__main__":
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-
-    checker_thread = threading.Thread(
-        target=check_stock_subscriptions, daemon=True
-    )
-    checker_thread.start()
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
