@@ -256,7 +256,8 @@ def api_accessories():
         return jsonify([])
 
     products = get_products() or []
-    accessories = []
+    exact_accessories = []
+    generic_accessories = []
 
     for p in products:
         cat = clean_val(p.get("Категория", "")).lower()
@@ -264,15 +265,23 @@ def api_accessories():
             compat = clean_val(p.get("Совместимость", "")).lower()
             title = clean_val(p.get("Название", "")).lower()
 
-            if model in compat or model in title:
-                accessories.append(
-                    {
-                        "Название": p.get("Название", ""),
-                        "Цена": p.get("Цена", "0"),
-                    }
-                )
+            item = {
+                "Название": p.get("Название", ""),
+                "Цена": p.get("Цена", "0"),
+            }
 
-    return jsonify(accessories[:4])
+            # 1. Если есть точное совпадение с моделью
+            if model in compat or model in title:
+                exact_accessories.append(item)
+            else:
+                generic_accessories.append(item)
+
+    # Если нашли точные аксессуары под модель — отдаем их.
+    # Если под Note 17 ничего спец. не заполнено — отдаем базовые пленки/стекла из наличия!
+    result = (
+        exact_accessories if exact_accessories else generic_accessories[:4]
+    )
+    return jsonify(result[:4])
 
 
 @app.route("/order", methods=["POST"])
