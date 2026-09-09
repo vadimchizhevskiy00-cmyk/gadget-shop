@@ -257,10 +257,12 @@ def api_accessories():
 
     products = get_products() or []
     exact_accessories = []
-    generic_accessories = []
+    film_accessories = []
 
     for p in products:
         cat = clean_val(p.get("Категория", "")).lower()
+
+        # Работаем только с аксессуарами
         if cat in ["чехлы", "стекла", "пленки", "чохли", "скло", "плівки"]:
             compat = clean_val(p.get("Совместимость", "")).lower()
             title = clean_val(p.get("Название", "")).lower()
@@ -270,17 +272,19 @@ def api_accessories():
                 "Цена": p.get("Цена", "0"),
             }
 
-            # 1. Если есть точное совпадение с моделью
+            # 1. Если есть точное совпадение модели в названии или совместимости
             if model in compat or model in title:
                 exact_accessories.append(item)
-            else:
-                generic_accessories.append(item)
 
-    # Если нашли точные аксессуары под модель — отдаем их.
-    # Если под Note 17 ничего спец. не заполнено — отдаем базовые пленки/стекла из наличия!
-    result = (
-        exact_accessories if exact_accessories else generic_accessories[:4]
-    )
+            # 2. Собираем только плёнки как универсальный фоллбек
+            elif cat in ["пленки", "плівки"] or (
+                "пленка" in title or "плівка" in title
+            ):
+                film_accessories.append(item)
+
+    # Если нашли точные аксессуары под модель — отдаём их (чехлы, стёкла, плёнки).
+    # Если под модель ничего не заполнено — предлагаем ТОЛЬКО плёнки!
+    result = exact_accessories if exact_accessories else film_accessories
     return jsonify(result[:4])
 
 
