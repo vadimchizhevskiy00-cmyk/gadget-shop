@@ -213,10 +213,10 @@
             box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        /* Сетка характеристик */
+        /* Сетка характеристик с переносом длинного текста */
         .specs-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 6px;
             margin-bottom: 14px;
         }
@@ -225,15 +225,15 @@
             font-weight: 600;
             opacity: 0.85;
             background: var(--bg);
-            padding: 6px 10px;
-            border-radius: 10px;
+            padding: 7px 12px;
+            border-radius: 12px;
             border: 1px solid var(--hint);
             display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            align-items: flex-start;
+            gap: 6px;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.35;
         }
 
         .product-price {
@@ -400,13 +400,13 @@
                 </div>
                 {% endif %}
 
-                <!-- Характеристики в виде сетки премиум-плашек -->
+                <!-- Характеристики в виде аккуратных вертикальных плашек -->
                 <div class="specs-container">
-                    {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag">🖥️ {{ p.get('Экран') }}</div>{% endif %}
-                    {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag">🧠 {{ p.get('Процессор') }}</div>{% endif %}
-                    {% if p.get('Камера') and p.get('Камера') != '-' %}<div class="spec-tag">📸 {{ p.get('Камера') }}</div>{% endif %}
-                    {% if p.get('Батарея') and p.get('Батарея') != '-' %}<div class="spec-tag">🔋 {{ p.get('Батарея') }}</div>{% endif %}
-                    {% if p.get('Мощность') and p.get('Мощность') != '-' %}<div class="spec-tag">⚡ {{ p.get('Мощность') }}</div>{% endif %}
+                    {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag"><span>🖥️</span> <span>{{ p.get('Экран') }}</span></div>{% endif %}
+                    {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag"><span>🧠</span> <span>{{ p.get('Процессор') }}</span></div>{% endif %}
+                    {% if p.get('Камера') and p.get('Камера') != '-' %}<div class="spec-tag"><span>📸</span> <span>{{ p.get('Камера') }}</span></div>{% endif %}
+                    {% if p.get('Батарея') and p.get('Батарея') != '-' %}<div class="spec-tag"><span>🔋</span> <span>{{ p.get('Батарея') }}</span></div>{% endif %}
+                    {% if p.get('Мощность') and p.get('Мощность') != '-' %}<div class="spec-tag"><span>⚡</span> <span>{{ p.get('Мощность') }}</span></div>{% endif %}
                 </div>
 
                 <div class="product-price" id="price-display-{{ outer_index }}">{{ p.get('price_list', [p.get('Цена', '0')])[0] }} грн</div>
