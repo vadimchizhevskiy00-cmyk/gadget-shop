@@ -74,9 +74,9 @@
             color: var(--text);
             box-sizing: border-box;
             border: 1px solid var(--hint);
-            transition: transform 0.15s ease, background 0.15s ease;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.15s ease;
         }
-        .cat-card:active { transform: scale(0.96); opacity: 0.8; }
+        .cat-card:active { transform: scale(0.94); opacity: 0.85; }
 
         .cat-icon {
             font-size: 36px;
@@ -89,16 +89,21 @@
             margin-bottom: 12px;
             background: var(--bg);
             box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
         }
+        .cat-card:active .cat-icon { transform: scale(1.1); }
 
         .cat-name { font-size: 16px; font-weight: 700; display: block; margin-bottom: 4px; letter-spacing: -0.3px; }
         .cat-desc { font-size: 11px; opacity: 0.55; display: block; }
 
-        .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 16px; border: none; background: var(--accent); color: white; font-weight: 700; text-align: center; text-decoration: none; box-sizing: border-box; cursor: pointer; font-size: 15px; }
-        .search-input { width: 100%; padding: 14px 16px; margin: 10px 0 15px 0; border-radius: 16px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; outline: none; font-size: 15px; }
+        .nav-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 16px; border: none; background: var(--accent); color: white; font-weight: 700; text-align: center; text-decoration: none; box-sizing: border-box; cursor: pointer; font-size: 15px; transition: transform 0.15s ease; }
+        .nav-btn:active { transform: scale(0.97); }
+
+        .search-input { width: 100%; padding: 14px 16px; margin: 10px 0 15px 0; border-radius: 16px; border: 1px solid var(--hint); background: var(--secondary); color: var(--text); box-sizing: border-box; outline: none; font-size: 15px; transition: border-color 0.2s ease; }
+        .search-input:focus { border-color: var(--accent); }
         .category-title { font-size: 12px; opacity: 0.5; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 800; }
 
-        /* === ПРЕМИУМ-КАРТОЧКА ТОВАРА === */
+        /* === КАРТОЧКА ТОВАРА С АНИМАЦИЯМИ === */
         .product-card {
             position: relative;
             background: var(--secondary);
@@ -108,9 +113,9 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.03);
             border: 1px solid var(--hint);
             box-sizing: border-box;
+            transition: transform 0.2s ease;
         }
 
-        /* Бейджи с эффектом Glassmorphism */
         .badge {
             position: absolute;
             top: 16px;
@@ -126,10 +131,16 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .badge-hit { background: rgba(255, 59, 48, 0.9); }
         .badge-new { background: rgba(52, 199, 89, 0.9); }
         .badge-sale { background: rgba(255, 149, 0, 0.9); }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
 
         .stock-status {
             display: inline-flex;
@@ -158,42 +169,16 @@
             box-sizing: border-box;
             border: none;
             filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));
+            transition: transform 0.3s ease;
         }
+        .product-card:hover .product-img { transform: scale(1.03); }
 
-        .product-title {
-            font-weight: 800;
-            font-size: 18px;
-            margin-bottom: 4px;
-            letter-spacing: -0.4px;
-            line-height: 1.25;
-        }
-        
-        .product-desc {
-            font-size: 13px;
-            opacity: 0.65;
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
+        .product-title { font-weight: 800; font-size: 18px; margin-bottom: 4px; letter-spacing: -0.4px; line-height: 1.25; }
+        .product-desc { font-size: 13px; opacity: 0.65; margin-bottom: 12px; line-height: 1.4; }
 
-        /* Переключатель памяти iOS Segmented Control */
-        .memory-selector-title {
-            font-size: 11px;
-            opacity: 0.5;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-top: 10px;
-            margin-bottom: 6px;
-        }
-        .memory-selector {
-            display: flex;
-            gap: 6px;
-            background: var(--bg);
-            padding: 4px;
-            border-radius: 14px;
-            border: 1px solid var(--hint);
-            margin-bottom: 14px;
-        }
+        /* Переключатель памяти iOS */
+        .memory-selector-title { font-size: 11px; opacity: 0.5; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 10px; margin-bottom: 6px; }
+        .memory-selector { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 14px; border: 1px solid var(--hint); margin-bottom: 14px; }
         .memory-btn {
             flex: 1;
             padding: 8px 0;
@@ -207,19 +192,15 @@
             transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             text-align: center;
         }
+        .memory-btn:active { transform: scale(0.94); }
         .memory-btn.active {
             background: var(--accent);
             color: white;
             box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        /* Сетка характеристик с переносом длинного текста */
-        .specs-container {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 14px;
-        }
+        /* Сетка характеристик */
+        .specs-container { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .spec-tag {
             font-size: 11px;
             font-weight: 600;
@@ -236,28 +217,11 @@
             line-height: 1.35;
         }
 
-        .product-price {
-            color: var(--accent);
-            font-weight: 900;
-            margin: 10px 0 14px 0;
-            font-size: 22px;
-            letter-spacing: -0.5px;
-        }
+        .product-price { color: var(--accent); font-weight: 900; margin: 10px 0 14px 0; font-size: 22px; letter-spacing: -0.5px; }
 
-        .price-select {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 14px;
-            border: 1px solid var(--hint);
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
-            font-weight: 600;
-            outline: none;
-            box-sizing: border-box;
-        }
+        .price-select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 14px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; font-weight: 600; outline: none; box-sizing: border-box; }
 
+        /* КНОПКА КУПИТЬ С ПУЛЬСИРУЮЩЕЙ АНИМАЦИЕЙ */
         .buy-btn {
             width: 100%;
             padding: 15px;
@@ -269,14 +233,25 @@
             cursor: pointer;
             font-size: 15px;
             letter-spacing: -0.2px;
-            transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease;
             box-shadow: 0 4px 14px rgba(0, 122, 255, 0.25);
         }
-        .buy-btn:active { transform: scale(0.97); }
+        .buy-btn:active { transform: scale(0.96); }
+        .buy-btn.added {
+            background: var(--green) !important;
+            box-shadow: 0 4px 14px rgba(52, 199, 89, 0.3) !important;
+            animation: pulseGreen 0.4s ease;
+        }
         .buy-btn-notify { background: var(--orange); box-shadow: 0 4px 14px rgba(255, 149, 0, 0.25); }
 
-        /* Модальные окна */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); backdrop-filter: blur(5px); z-index: 100; justify-content: center; align-items: flex-end; }
+        @keyframes pulseGreen {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        /* МОДАЛЬНЫЕ ОКНА */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 100; justify-content: center; align-items: flex-end; }
         .modal-content { background: var(--bg); padding: 22px; border-radius: 28px 28px 0 0; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; box-sizing: border-box; animation: slideUp 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); }
         
         @keyframes slideUp {
@@ -286,14 +261,16 @@
 
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--hint); padding-bottom: 12px; }
         .modal-title { font-size: 18px; font-weight: 800; margin: 0; }
-        .close-modal-icon { background: var(--secondary); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; color: var(--text); opacity: 0.7; }
+        .close-modal-icon { background: var(--secondary); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; color: var(--text); opacity: 0.7; transition: transform 0.15s ease; }
+        .close-modal-icon:active { transform: scale(0.85); }
 
         .cart-receipt { background: var(--secondary); border-radius: 18px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--hint); }
         .cart-item { padding: 10px 0; border-bottom: 1px dashed var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .cart-item:last-child { border-bottom: none; }
         .cart-item-title { font-size: 14px; font-weight: 600; }
         .cart-item-price { font-size: 14px; font-weight: 800; color: var(--accent); white-space: nowrap; }
-        .delete-btn { background: none; border: none; color: var(--red); font-size: 16px; cursor: pointer; padding: 0 4px; font-weight: bold; }
+        .delete-btn { background: none; border: none; color: var(--red); font-size: 16px; cursor: pointer; padding: 0 4px; font-weight: bold; transition: transform 0.15s ease; }
+        .delete-btn:active { transform: scale(0.8); }
 
         .receipt-total { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--hint); font-size: 16px; font-weight: 800; }
 
@@ -302,13 +279,14 @@
         .booking-box input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
         .booking-timer-info { font-size: 11px; opacity: 0.8; margin-top: 6px; padding-left: 28px; color: var(--accent); font-weight: 600; }
 
-        .form-input { width: 100%; padding: 14px 16px; margin: 8px 0; border-radius: 14px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--secondary); color: var(--text); outline: none; font-size: 14px; }
+        .form-input { width: 100%; padding: 14px 16px; margin: 8px 0; border-radius: 14px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--secondary); color: var(--text); outline: none; font-size: 14px; transition: border-color 0.2s ease; }
         .form-input:focus { border-color: var(--accent); }
 
         .recommendation-box { background: var(--secondary); padding: 14px; border-radius: 18px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
         .phone-group-title { font-size: 12px; font-weight: 800; margin: 8px 0 6px 0; opacity: 0.8; }
-        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 10px 12px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
-        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: 800; white-space: nowrap; }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 10px 12px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); animation: popIn 0.25s ease; }
+        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: 800; white-space: nowrap; transition: transform 0.15s ease; }
+        .add-rec-btn:active { transform: scale(0.92); }
     </style>
 </head>
 <body>
@@ -320,7 +298,7 @@
         </div>
 
         <div class="category-grid">
-            <a href="/?category=телефоны" class="cat-card">
+            <a href="/?category=телефоны" class="cat-card" onclick="triggerHaptic('light')">
                 <div class="cat-icon">📱</div>
                 <div>
                     <span class="cat-name">Телефони</span>
@@ -328,7 +306,7 @@
                 </div>
             </a>
 
-            <a href="/?category=Чехлы" class="cat-card">
+            <a href="/?category=Чехлы" class="cat-card" onclick="triggerHaptic('light')">
                 <div class="cat-icon">🛡️</div>
                 <div>
                     <span class="cat-name">Чохли</span>
@@ -336,7 +314,7 @@
                 </div>
             </a>
 
-            <a href="/?category=Стекла" class="cat-card">
+            <a href="/?category=Стекла" class="cat-card" onclick="triggerHaptic('light')">
                 <div class="cat-icon">✨</div>
                 <div>
                     <span class="cat-name">Захисне скло</span>
@@ -344,7 +322,7 @@
                 </div>
             </a>
 
-            <a href="/?category=Пленки" class="cat-card">
+            <a href="/?category=Пленки" class="cat-card" onclick="triggerHaptic('light')">
                 <div class="cat-icon">📜</div>
                 <div>
                     <span class="cat-name">Плівки</span>
@@ -353,7 +331,7 @@
             </a>
         </div>
     {% else %}
-        <button onclick="window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px; box-shadow: none;">⬅ Назад до категорій</button>
+        <button onclick="triggerHaptic('light'); window.location.href='/'" class="nav-btn" style="background: var(--secondary); color: var(--text); margin-bottom: 15px; box-shadow: none;">⬅ Назад до категорій</button>
         <input type="text" id="searchInput" class="search-input" placeholder="🔍 Пошук за назвою..." value="{{ search }}" onkeypress="if(event.key==='Enter') applyFilters()">
         <div class="category-title">Розділ: {{ category }}</div>
 
@@ -400,7 +378,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Характеристики в виде аккуратных вертикальных плашек -->
                 <div class="specs-container">
                     {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag"><span>🖥️</span> <span>{{ p.get('Экран') }}</span></div>{% endif %}
                     {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag"><span>🧠</span> <span>{{ p.get('Процессор') }}</span></div>{% endif %}
@@ -419,13 +396,13 @@
 
             {% elif cat_lower in ['пленки', 'плівки'] or ('плівка' in title_lower or 'пленка' in title_lower) %}
                 {% if 'матовая' in title_lower or 'матова' in title_lower %}
-                    <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'">
+                    <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'; triggerHaptic('selection');">
                         <option value="400">Матова (Антиблік) — 400 грн</option>
                     </select>
                     <div class="product-price" id="price-display-{{ outer_index }}">400 грн</div>
                 {% else %}
                     <div class="memory-selector-title">Варіант плівки:</div>
-                    <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'">
+                    <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'; triggerHaptic('selection');">
                         <option value="300">Глянцева (Стандарт) — 300 грн</option>
                         <option value="400">Глянцева (Посилена) — 400 грн</option>
                         <option value="500">Глянцева (Преміум самовідновлення) — 500 грн</option>
@@ -513,7 +490,21 @@
         let mainButton = tg.MainButton;
         mainButton.color = tg.themeParams.button_color || "#007aff";
         
-        Telegram.WebApp.onEvent('mainButtonClicked', function(){ openCartModal(); });
+        Telegram.WebApp.onEvent('mainButtonClicked', function(){ 
+            triggerHaptic('medium');
+            openCartModal(); 
+        });
+
+        // Функция для гибкого управления Haptic Feedback
+        function triggerHaptic(type) {
+            if (!tg.HapticFeedback) return;
+            try {
+                if (type === 'light') tg.HapticFeedback.impactOccurred('light');
+                else if (type === 'medium') tg.HapticFeedback.impactOccurred('medium');
+                else if (type === 'selection') tg.HapticFeedback.selectionChanged();
+                else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+            } catch (e) {}
+        }
 
         function updateBookingTime() {
             let now = new Date();
@@ -526,6 +517,7 @@
         }
 
         function toggleBookingInfo() {
+            triggerHaptic('selection');
             let isChecked = document.getElementById('bookingCheckbox').checked;
             let timerInfo = document.getElementById('bookingTimerInfo');
             let submitBtn = document.getElementById('submitOrderBtn');
@@ -540,7 +532,7 @@
         }
 
         function selectMemory(cardIdx, memoryVal, priceVal, btnEl) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.selectionChanged(); }
+            triggerHaptic('selection');
             let parent = btnEl.parentElement;
             parent.querySelectorAll('.memory-btn').forEach(b => b.classList.remove('active'));
             btnEl.classList.add('active');
@@ -590,19 +582,17 @@
         updateUI();
 
         function addToCart(title, price, btnElement) { 
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('medium'); }
+            triggerHaptic('medium');
             cart.push({title, price}); 
             updateUI(); 
 
             if (btnElement) {
                 let orig = btnElement.innerText;
                 btnElement.innerText = "✓ У кошику";
-                btnElement.style.background = "var(--green)";
-                btnElement.style.boxShadow = "0 4px 14px rgba(52, 199, 89, 0.3)";
+                btnElement.classList.add('added');
                 setTimeout(() => {
                     btnElement.innerText = orig;
-                    btnElement.style.background = "var(--accent)";
-                    btnElement.style.boxShadow = "0 4px 14px rgba(0, 122, 255, 0.25)";
+                    btnElement.classList.remove('added');
                 }, 1200);
             }
         }
@@ -615,14 +605,14 @@
         }
 
         function addAccessory(title, price) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.impactOccurred('light'); }
+            triggerHaptic('light');
             cart.push({title, price});
             updateUI();
             openCartModal(); 
         }
 
         function removeFromCart(index) {
-            if (tg.HapticFeedback) { tg.HapticFeedback.selectionChanged(); }
+            triggerHaptic('selection');
             cart.splice(index, 1);
             updateUI();
             if (cart.length > 0) openCartModal();
@@ -691,21 +681,25 @@
         }
 
         function closeModal() { 
+            triggerHaptic('light');
             document.getElementById('cartModal').style.display = 'none'; 
             if (cart.length > 0) mainButton.show();
         }
 
         function openNotifyModal(productTitle) {
+            triggerHaptic('light');
             currentNotifyProduct = productTitle;
             document.getElementById('notifyProductName').innerText = productTitle;
             document.getElementById('notifyModal').style.display = 'flex';
         }
 
         function closeNotifyModal() {
+            triggerHaptic('light');
             document.getElementById('notifyModal').style.display = 'none';
         }
 
         function subscribeNotify(productTitle) {
+            triggerHaptic('medium');
             let userChatId = null;
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                 userChatId = window.Telegram.WebApp.initDataUnsafe.user.id;
@@ -723,7 +717,7 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (tg.HapticFeedback) { tg.HapticFeedback.notificationOccurred('success'); }
+                    triggerHaptic('success');
                     alert("✅ Дякуємо! Ми зафіксували ваші дані. Як тільки товар з'явиться в магазині, бот надішле вам особисте повідомлення.");
                 })
                 .catch(err => {
@@ -747,6 +741,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ type: 'notify', product_name: currentNotifyProduct, name: name, phone: phoneInput, chat_id: userChatId })
             }).then(() => {
+                triggerHaptic('success');
                 alert("Дякуємо! Ми зафіксували вашу заявку та повідомимо про появу товару.");
                 closeNotifyModal();
             });
@@ -765,6 +760,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ type: isBooking ? 'booking' : 'order', items: cart, name: name, phone: phoneInput })
             }).then(() => { 
+                triggerHaptic('success');
                 let msg = isBooking 
                     ? 'Ваш товар успішно заброньовано на 24 години! Чекаємо на вас у магазині.' 
                     : 'Дякуємо! Ваше замовлення прийнято.';
@@ -778,6 +774,7 @@
         }
 
         function applyFilters() {
+            triggerHaptic('light');
             let s = document.getElementById('searchInput').value;
             window.location.href = `/?category={{ category }}&search=${encodeURIComponent(s)}`;
         }
