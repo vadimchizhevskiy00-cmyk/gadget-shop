@@ -45,11 +45,89 @@
 
         .welcome-header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             flex-shrink: 0;
         }
         .welcome-header h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px 0; letter-spacing: -0.5px; }
         .welcome-header p { font-size: 13px; opacity: 0.6; margin: 0; }
+
+        /* === БАННЕР-СЛАЙДЕР === */
+        .slider-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(52,199,89,0.12) 100%);
+            border: 1px solid var(--hint);
+        }
+
+        .slider-wrapper {
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 100%;
+        }
+
+        .slide {
+            min-width: 100%;
+            box-sizing: border-box;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .slide-icon {
+            font-size: 32px;
+            background: var(--bg);
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .slide-content h4 {
+            margin: 0 0 3px 0;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.2px;
+        }
+
+        .slide-content p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.7;
+            line-height: 1.3;
+        }
+
+        .slider-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding-bottom: 10px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text);
+            opacity: 0.2;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            width: 18px;
+            border-radius: 10px;
+            background: var(--accent);
+            opacity: 1;
+        }
 
         .category-grid {
             display: grid;
@@ -103,7 +181,7 @@
         .search-input:focus { border-color: var(--accent); }
         .category-title { font-size: 12px; opacity: 0.5; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 800; }
 
-        /* === КАРТОЧКА ТОВАРА С АНИМАЦИЯМИ === */
+        /* КАРТОЧКА ТОВАРА */
         .product-card {
             position: relative;
             background: var(--secondary);
@@ -176,7 +254,6 @@
         .product-title { font-weight: 800; font-size: 18px; margin-bottom: 4px; letter-spacing: -0.4px; line-height: 1.25; }
         .product-desc { font-size: 13px; opacity: 0.65; margin-bottom: 12px; line-height: 1.4; }
 
-        /* Переключатель памяти iOS */
         .memory-selector-title { font-size: 11px; opacity: 0.5; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 10px; margin-bottom: 6px; }
         .memory-selector { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 14px; border: 1px solid var(--hint); margin-bottom: 14px; }
         .memory-btn {
@@ -199,7 +276,6 @@
             box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        /* Сетка характеристик */
         .specs-container { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .spec-tag {
             font-size: 11px;
@@ -221,7 +297,6 @@
 
         .price-select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 14px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; font-weight: 600; outline: none; box-sizing: border-box; }
 
-        /* КНОПКА КУПИТЬ С ПУЛЬСИРУЮЩЕЙ АНИМАЦИЕЙ */
         .buy-btn {
             width: 100%;
             padding: 15px;
@@ -295,6 +370,38 @@
         <div class="welcome-header">
             <h1>🛍️ Вітрина магазину</h1>
             <p>Оберіть потрібну категорію товарів</p>
+        </div>
+
+        <!-- ИНТЕРАКТИВНЫЙ СЛАЙДЕР -->
+        <div class="slider-container">
+            <div class="slider-wrapper" id="sliderWrapper">
+                <div class="slide">
+                    <div class="slide-icon">✨</div>
+                    <div class="slide-content">
+                        <h4>Поклейка плівки та скла на місці</h4>
+                        <p>Безкоштовно встановлюємо за 5 хвилин при покупці у магазині!</p>
+                    </div>
+                </div>
+                <div class="slide">
+                    <div class="slide-icon">🛡️</div>
+                    <div class="slide-content">
+                        <h4>Гарантія до 12 місяців</h4>
+                        <p>Офіційна гарантія та сервісна підтримка на всі пристрої.</p>
+                    </div>
+                </div>
+                <div class="slide">
+                    <div class="slide-icon">📌</div>
+                    <div class="slide-content">
+                        <h4>Швидке бронювання</h4>
+                        <p>Забронюй товар у 1 клік та забирай у магазині вже сьогодні!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slider-dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
         </div>
 
         <div class="category-grid">
@@ -495,7 +602,23 @@
             openCartModal(); 
         });
 
-        // Функция для гибкого управления Haptic Feedback
+        // ЛОГИКА СЛАЙДЕРА
+        let currentSlide = 0;
+        const slidesCount = 3;
+        function nextSlide() {
+            const wrapper = document.getElementById('sliderWrapper');
+            const dots = document.querySelectorAll('.slider-dots .dot');
+            if (!wrapper || dots.length === 0) return;
+            
+            currentSlide = (currentSlide + 1) % slidesCount;
+            wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+            
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === currentSlide);
+            });
+        }
+        setInterval(nextSlide, 4000);
+
         function triggerHaptic(type) {
             if (!tg.HapticFeedback) return;
             try {
