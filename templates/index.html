@@ -121,19 +121,40 @@
         .buy-btn:active { transform: scale(0.97); }
         .buy-btn-notify { background: var(--orange); }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: var(--bg); padding: 24px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
-        .form-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--bg); color: var(--text); outline: none; }
-        .cart-item { padding: 8px 0; border-bottom: 1px solid var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .delete-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; padding: 0 4px; font-weight: bold; }
+        /* === ОБНОВЛЕННЫЙ ДИЗАЙН МОДАЛЬНЫХ ОКОН === */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 100; justify-content: center; align-items: flex-end; }
+        .modal-content { background: var(--bg); padding: 20px; border-radius: 24px 24px 0 0; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; box-sizing: border-box; animation: slideUp 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
 
-        .booking-box { background: var(--secondary); padding: 12px; border-radius: 12px; margin: 12px 0; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid var(--accent); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--hint); padding-bottom: 12px; }
+        .modal-title { font-size: 18px; font-weight: 800; margin: 0; }
+        .close-modal-icon { background: var(--secondary); border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; color: var(--text); opacity: 0.7; }
+
+        .cart-receipt { background: var(--secondary); border-radius: 16px; padding: 14px; margin-bottom: 16px; border: 1px solid var(--hint); }
+        .cart-item { padding: 10px 0; border-bottom: 1px dashed var(--hint); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-title { font-size: 14px; font-weight: 600; }
+        .cart-item-price { font-size: 14px; font-weight: bold; color: var(--accent); white-space: nowrap; }
+        .delete-btn { background: none; border: none; color: var(--red); font-size: 16px; cursor: pointer; padding: 0 4px; font-weight: bold; }
+
+        .receipt-total { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--hint); font-size: 16px; font-weight: 800; }
+
+        .booking-box { background: rgba(36, 129, 204, 0.08); padding: 12px 14px; border-radius: 14px; margin: 12px 0; border: 1px solid var(--accent); }
+        .booking-box-header { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; cursor: pointer; }
         .booking-box input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+        .booking-timer-info { font-size: 11px; opacity: 0.8; margin-top: 6px; padding-left: 28px; color: var(--accent); font-weight: 600; }
 
-        .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 14px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
-        .phone-group-title { font-size: 12px; font-weight: bold; margin: 10px 0 6px 0; color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 3px; }
-        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 8px; border-radius: 8px; }
-        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        .form-input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid var(--hint); box-sizing: border-box; background: var(--secondary); color: var(--text); outline: none; font-size: 14px; }
+        .form-input:focus { border-color: var(--accent); }
+
+        .recommendation-box { background: var(--secondary); padding: 12px; border-radius: 16px; margin: 15px 0; border: 1px dashed var(--accent); display: none; }
+        .phone-group-title { font-size: 12px; font-weight: bold; margin: 8px 0 6px 0; opacity: 0.8; }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .add-rec-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -275,39 +296,55 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Модальне вікно замовлення / броні -->
+    <!-- ОБНОВЛЕННОЕ МОДАЛЬНОЕ ОКНО КОРЗИНЫ -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
-            <h3>Ваше замовлення</h3>
-            <div id="cartItemsList"></div>
+            <div class="modal-header">
+                <h3 class="modal-title">🛒 Ваше замовлення</h3>
+                <button class="close-modal-icon" onclick="closeModal()">✕</button>
+            </div>
 
-            <label class="booking-box">
-                <input type="checkbox" id="bookingCheckbox" checked>
-                <span>📌 Забронювати у магазині на 24 години</span>
-            </label>
+            <div class="cart-receipt">
+                <div id="cartItemsList"></div>
+                <div class="receipt-total">
+                    <span>Разом до сплати:</span>
+                    <span id="cartTotalPrice" style="color:var(--accent);">0 грн</span>
+                </div>
+            </div>
+
+            <div class="booking-box">
+                <label class="booking-box-header">
+                    <input type="checkbox" id="bookingCheckbox" checked onchange="toggleBookingInfo()">
+                    <span>📌 Безкоштовне бронювання на 24 години</span>
+                </label>
+                <div class="booking-timer-info" id="bookingTimerInfo">
+                    ⏱️ Бронь діятиме до: <b id="bookingTimeCalc">...</b>
+                </div>
+            </div>
 
             <div id="recommendationsContainer" class="recommendation-box">
-                <div style="font-size:13px; font-weight:bold; color:var(--accent);">✨ Додайте до ваших пристроїв:</div>
+                <div style="font-size:13px; font-weight:bold; color:var(--accent); margin-bottom:6px;">✨ Додайте до ваших пристроїв:</div>
                 <div id="recItemsList"></div>
             </div>
             
             <input type="text" id="clientName" class="form-input" placeholder="Ваше ім'я">
             <input type="tel" id="clientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
-            <button class="nav-btn" id="submitOrderBtn" onclick="submitOrder()">Забронювати замовлення</button>
-            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Закрити</button>
+            <button class="nav-btn" id="submitOrderBtn" style="margin-top:10px;" onclick="submitOrder()">Підтвердити бронювання</button>
         </div>
     </div>
 
-    <!-- Модальне вікно сповіщень -->
+    <!-- Модальное окно уведомлений -->
     <div class="modal" id="notifyModal">
         <div class="modal-content">
-            <h3>🔔 Повідомити про появу</h3>
+            <div class="modal-header">
+                <h3 class="modal-title">🔔 Повідомити про появу</h3>
+                <button class="close-modal-icon" onclick="closeNotifyModal()">✕</button>
+            </div>
             <div id="notifyProductName" style="font-weight:bold; margin-bottom:10px; color:var(--accent);"></div>
             <p style="font-size:13px; opacity:0.8;">Залиште ваші контакти, і ми повідомимо вас одразу, як товар з'явиться у магазині!</p>
             <input type="text" id="notifyClientName" class="form-input" placeholder="Ваше ім'я">
             <input type="tel" id="notifyClientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
-            <button class="nav-btn" style="background:var(--orange);" onclick="submitNotify()">Надіслати заявку</button>
-            <button onclick="closeNotifyModal()" style="width:100%; background:none; border:none; color:gray; padding:12px; cursor:pointer;">Скасувати</button>
+            <button class="nav-btn" style="background:var(--orange); margin-top:10px;" onclick="submitNotify()">Надіслати заявку</button>
         </div>
     </div>
 
@@ -323,14 +360,29 @@
         
         Telegram.WebApp.onEvent('mainButtonClicked', function(){ openCartModal(); });
 
-        document.getElementById('bookingCheckbox').addEventListener('change', function(e) {
+        function updateBookingTime() {
+            let now = new Date();
+            now.setHours(now.getHours() + 24);
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            let day = now.getDate().toString().padStart(2, '0');
+            let month = (now.getMonth() + 1).toString().padStart(2, '0');
+            document.getElementById('bookingTimeCalc').innerText = `${hours}:${minutes} (${day}.${month})`;
+        }
+
+        function toggleBookingInfo() {
+            let isChecked = document.getElementById('bookingCheckbox').checked;
+            let timerInfo = document.getElementById('bookingTimerInfo');
             let submitBtn = document.getElementById('submitOrderBtn');
-            if (e.target.checked) {
-                submitBtn.innerText = "Забронювати замовлення";
+            
+            if (isChecked) {
+                timerInfo.style.display = 'block';
+                submitBtn.innerText = "Підтвердити бронювання";
             } else {
+                timerInfo.style.display = 'none';
                 submitBtn.innerText = "Підтвердити замовлення";
             }
-        });
+        }
 
         function selectMemory(cardIdx, memoryVal, priceVal, btnEl) {
             let parent = btnEl.parentElement;
@@ -424,11 +476,16 @@
             
             list.innerHTML = cart.map((i, index) => `
                 <div class="cart-item">
-                    <span>${i.title}</span>
-                    <b>${i.price} грн</b>
-                    <button class="delete-btn" onclick="removeFromCart(${index})">✕</button>
+                    <span class="cart-item-title">${i.title}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="cart-item-price">${i.price} грн</span>
+                        <button class="delete-btn" onclick="removeFromCart(${index})">✕</button>
+                    </div>
                 </div>
-            `).join('') + `<div style="margin-top: 10px; font-weight: bold; text-align: right;">Разом: ${totalPrice} грн</div>`;
+            `).join('');
+
+            document.getElementById('cartTotalPrice').innerText = `${totalPrice} грн`;
+            updateBookingTime();
 
             let recBox = document.getElementById('recommendationsContainer');
             let recList = document.getElementById('recItemsList');
@@ -445,7 +502,7 @@
                 let searchModel = words.length > 1 ? `${words[0]} ${words[1]}` : words[0];
                 let cleanModel = searchModel.trim().toLowerCase();
                 if (!uniqueModels.some(m => m.clean === cleanModel)) {
-                    uniqueModels.push({ raw: searchModel, clean: cleanModel });
+                    uniqueModels.push({ raw: cleanTitle, clean: cleanModel });
                 }
             });
 
