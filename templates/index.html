@@ -220,6 +220,29 @@
             to { transform: scale(1); opacity: 1; }
         }
 
+        /* БЕЙДЖИ ПОПУЛЯРНОСТИ И ПРОСМОТРОВ */
+        .popularity-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            width: fit-content;
+        }
+        .tag-views {
+            background: rgba(255, 149, 0, 0.1);
+            color: #b25900;
+            border: 1px solid rgba(255, 149, 0, 0.25);
+        }
+        .tag-sales {
+            background: rgba(255, 59, 48, 0.1);
+            color: #d70015;
+            border: 1px solid rgba(255, 59, 48, 0.25);
+        }
+
         .stock-status {
             display: inline-flex;
             align-items: center;
@@ -276,7 +299,6 @@
             box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        /* Выделенная сетка характеристик с разделителями */
         .specs-container {
             display: flex;
             flex-direction: column;
@@ -305,7 +327,6 @@
             border-right: 1px solid var(--hint);
         }
         
-        /* Акцентная подсветка батареи и мощности */
         .spec-tag-battery {
             background: rgba(52, 199, 89, 0.08);
             border-color: rgba(52, 199, 89, 0.25);
@@ -349,7 +370,6 @@
             100% { transform: scale(1); }
         }
 
-        /* МОДАЛЬНЫЕ ОКНА */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 100; justify-content: center; align-items: flex-end; }
         .modal-content { background: var(--bg); padding: 22px; border-radius: 28px 28px 0 0; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; box-sizing: border-box; animation: slideUp 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); }
         
@@ -396,7 +416,6 @@
             <p>Оберіть потрібну категорію товарів</p>
         </div>
 
-        <!-- ИНТЕРАКТИВНЫЙ СЛАЙДЕР -->
         <div class="slider-container">
             <div class="slider-wrapper" id="sliderWrapper">
                 <div class="slide">
@@ -493,6 +512,17 @@
                 {% set is_out_of_stock = false %}
             {% endif %}
 
+            <!-- Динамическая плашка популярности -->
+            {% if 'хит' in status_str or 'hit' in status_str %}
+                <div class="popularity-tag tag-sales">
+                    🔥 <span class="smart-count-sales" data-idx="{{ outer_index }}">...</span> замовлень за тиждень
+                </div>
+            {% else %}
+                <div class="popularity-tag tag-views">
+                    👀 <span class="smart-count-views" data-idx="{{ outer_index }}">...</span> людей дивляться зараз
+                </div>
+            {% endif %}
+
             <div class="product-title" id="title-{{ outer_index }}">{{ p.get('Название', '') }}</div>
             <div class="product-desc">{{ p.get('Описание', '') }}</div>
 
@@ -509,7 +539,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Характеристики с разделителями и подсветкой -->
                 <div class="specs-container">
                     {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag"><span>🖥️</span> <span>{{ p.get('Экран') }}</span></div>{% endif %}
                     {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag"><span>🧠</span> <span>{{ p.get('Процессор') }}</span></div>{% endif %}
@@ -643,6 +672,25 @@
             });
         }
         setInterval(nextSlide, 4000);
+
+        // ЛОГИКА СМАРТ-СЧЁТЧИКОВ (БЕЗ НАКРУТКИ АДМИНА)
+        function initSmartCounters() {
+            let today = new Date().getDate();
+            let hour = new Date().getHours();
+
+            document.querySelectorAll('.smart-count-views').forEach(el => {
+                let idx = parseInt(el.getAttribute('data-idx')) || 1;
+                let count = ((idx * 3 + today * 2 + hour) % 7) + 3;
+                el.innerText = count;
+            });
+
+            document.querySelectorAll('.smart-count-sales').forEach(el => {
+                let idx = parseInt(el.getAttribute('data-idx')) || 1;
+                let count = ((idx * 5 + today * 4) % 14) + 5;
+                el.innerText = count;
+            });
+        }
+        document.addEventListener("DOMContentLoaded", initSmartCounters);
 
         function triggerHaptic(type) {
             if (!tg.HapticFeedback) return;
