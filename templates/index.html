@@ -276,21 +276,45 @@
             box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
 
-        .specs-container { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        /* Выделенная сетка характеристик с разделителями */
+        .specs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
         .spec-tag {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            opacity: 0.85;
+            color: var(--text);
             background: var(--bg);
-            padding: 7px 12px;
+            padding: 8px 12px;
             border-radius: 12px;
             border: 1px solid var(--hint);
             display: flex;
-            align-items: flex-start;
-            gap: 6px;
+            align-items: center;
+            gap: 8px;
             white-space: normal;
             word-break: break-word;
-            line-height: 1.35;
+            line-height: 1.3;
+        }
+        .spec-tag span:first-child {
+            font-size: 14px;
+            flex-shrink: 0;
+            padding-right: 6px;
+            border-right: 1px solid var(--hint);
+        }
+        
+        /* Акцентная подсветка батареи и мощности */
+        .spec-tag-battery {
+            background: rgba(52, 199, 89, 0.08);
+            border-color: rgba(52, 199, 89, 0.25);
+            color: #128238;
+        }
+        .spec-tag-power {
+            background: rgba(255, 149, 0, 0.08);
+            border-color: rgba(255, 149, 0, 0.25);
+            color: #b25900;
         }
 
         .product-price { color: var(--accent); font-weight: 900; margin: 10px 0 14px 0; font-size: 22px; letter-spacing: -0.5px; }
@@ -485,12 +509,13 @@
                 </div>
                 {% endif %}
 
+                <!-- Характеристики с разделителями и подсветкой -->
                 <div class="specs-container">
                     {% if p.get('Экран') and p.get('Экран') != '-' %}<div class="spec-tag"><span>🖥️</span> <span>{{ p.get('Экран') }}</span></div>{% endif %}
                     {% if p.get('Процессор') and p.get('Процессор') != '-' %}<div class="spec-tag"><span>🧠</span> <span>{{ p.get('Процессор') }}</span></div>{% endif %}
                     {% if p.get('Камера') and p.get('Камера') != '-' %}<div class="spec-tag"><span>📸</span> <span>{{ p.get('Камера') }}</span></div>{% endif %}
-                    {% if p.get('Батарея') and p.get('Батарея') != '-' %}<div class="spec-tag"><span>🔋</span> <span>{{ p.get('Батарея') }}</span></div>{% endif %}
-                    {% if p.get('Мощность') and p.get('Мощность') != '-' %}<div class="spec-tag"><span>⚡</span> <span>{{ p.get('Мощность') }}</span></div>{% endif %}
+                    {% if p.get('Батарея') and p.get('Батарея') != '-' %}<div class="spec-tag spec-tag-battery"><span>🔋</span> <span>{{ p.get('Батарея') }}</span></div>{% endif %}
+                    {% if p.get('Мощность') and p.get('Мощность') != '-' %}<div class="spec-tag spec-tag-power"><span>⚡</span> <span>{{ p.get('Мощность') }}</span></div>{% endif %}
                 </div>
 
                 <div class="product-price" id="price-display-{{ outer_index }}">{{ p.get('price_list', [p.get('Цена', '0')])[0] }} грн</div>
