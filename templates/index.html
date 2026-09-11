@@ -1237,10 +1237,13 @@
             let month = (now.getMonth() + 1).toString().padStart(2, '0');
             document.getElementById('receiptExpireTimer').innerText = `${hours}:${minutes} (${day}.${month})`;
 
+            // Ссылка для мгновенной проверки заказа продавцом
+            let checkUrl = `${window.location.origin}/admin/check?order=${orderId}`;
+
             let qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
-                text: `ORDER:${orderId}|TOTAL:${totalPrice}|CLIENT:${name}`,
+                text: checkUrl,
                 width: 130,
                 height: 130,
                 colorDark : "#000000",
