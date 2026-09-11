@@ -205,7 +205,7 @@ def contacts_cmd(message):
     text = (
         "📍 <b>Наш магазин чекає на вас!</b>\n\n"
         "🏢 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
-        "⏰ <b>Графік роботи:</b>Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
+        "⏰ <b>Графік роботи:</b> Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
         "📞 <b>Телефон:</b> +380 97 391 64 00, +380 63 189 16 83\n"
         "💬 <b>Менеджер:</b> @smthwrng121"
     )
@@ -343,6 +343,7 @@ def order():
             items = data.get("items", [])
             name = data.get("name")
             phone = data.get("phone")
+            chat_id = data.get("chat_id")
             order_id = data.get("order_id", f"ORD-{int(time.time())}")
 
             total_sum = 0
@@ -366,12 +367,12 @@ def order():
             }
             save_json(ORDERS_FILE, orders)
 
+            # 1. Отправляем уведомление администратору
             title_hdr = (
                 "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>"
                 if req_type == "booking"
                 else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
             )
-
             items_str = "\n".join(
                 [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
             )
@@ -385,6 +386,28 @@ def order():
                 f"💰 <b>Разом:</b> {total_sum} грн"
             )
             send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
+
+            # 2. Отправляем чек с QR-кодом клиенту в ЛС
+            if chat_id:
+                check_url = f"{WEB_APP_URL}/admin/check?order={order_id}"
+                qr_img_url = f"https://quickchart.io/qr?text={requests.utils.quote(check_url)}&size=300"
+
+                client_msg = (
+                    f"✅ <b>Ваше бронювання успішно оформлено!</b>\n\n"
+                    f"🧾 <b>Чек:</b> #{order_id}\n"
+                    f"👤 <b>Клієнт:</b> {name}\n"
+                    f"📦 <b>Замовлення:</b>\n{items_str}\n\n"
+                    f"💰 <b>Разом до сплати:</b> {total_sum} грн\n"
+                    f"📍 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
+                    f"⏱️ <b>Бронь діє 24 години!</b>\n\n"
+                    f"👇 <i>Покажіть цей QR-код або номер чека продавцю на касі:</i>"
+                )
+                
+                try:
+                    bot.send_photo(chat_id, photo=qr_img_url, caption=client_msg, parse_mode="HTML")
+                except Exception as e:
+                    print(f"Error sending photo to client: {e}", file=sys.stderr)
+
             return jsonify({"status": "ok", "order_id": order_id})
 
     except Exception as e:
@@ -408,13 +431,11 @@ def admin_check():
         order_data["status"] = "completed"
         save_json(ORDERS_FILE, orders)
         
-        # Уведомляем администратора о выдаче товара
         send_telegram_msg(
             ADMIN_CHAT_ID, 
             f"✅ <b>ТОВАР ВИДАНО!</b>\n🧾 Чек: #{order_id}\n👤 Клієнт: {order_data['name']}\n💰 Сума: {order_data['total']} грн"
         )
 
-    # HTML-интерфейс для продавца
     items_html = "".join([f"<li><b>{i.get('title')}</b> — {i.get('price')} грн</li>" for i in order_data["items"]])
     status_badge = "<span style='color:green; font-weight:bold;'>🟢 АКТИВНЕ БРОНЮВАННЯ</span>" if order_data["status"] == "active" else "<span style='color:gray; font-weight:bold;'>⚪ ВИДАНО / ПОГАШЕНО</span>"
 
