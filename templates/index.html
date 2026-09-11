@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Магазин гаджетів</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg: var(--tg-theme-bg-color, #ffffff);
@@ -440,6 +441,85 @@
         .rec-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; background: var(--bg); padding: 10px 12px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); animation: popIn 0.25s ease; }
         .add-rec-btn { background: var(--accent); color: white; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: 800; white-space: nowrap; transition: transform 0.15s ease; }
         .add-rec-btn:active { transform: scale(0.92); }
+
+        /* СТИЛИЗОВАННЫЙ КАССОВЫЙ ЧЕК */
+        .receipt-card {
+            background: #ffffff;
+            color: #1c1c1e;
+            padding: 24px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            position: relative;
+            margin-bottom: 16px;
+            font-family: 'SF Mono', 'Courier New', monospace;
+            border: 1px dashed #ccc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .receipt-card {
+                background: #2c2c2e;
+                color: #ffffff;
+                border-color: #444;
+            }
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed var(--hint);
+            padding-bottom: 14px;
+            margin-bottom: 14px;
+        }
+
+        .receipt-title {
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 4px 0;
+        }
+
+        .receipt-order-id {
+            font-size: 13px;
+            opacity: 0.7;
+            font-weight: 700;
+        }
+
+        .receipt-body {
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .receipt-row-bold {
+            font-weight: 800;
+            font-size: 15px;
+            border-top: 2px dashed var(--hint);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .receipt-qr-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 16px;
+            margin: 14px 0;
+        }
+
+        .receipt-footer-text {
+            text-align: center;
+            font-size: 11px;
+            opacity: 0.6;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -697,6 +777,40 @@
             <input type="text" id="notifyClientName" class="form-input" placeholder="Ваше ім'я">
             <input type="tel" id="notifyClientPhone" class="form-input" value="+380 " oninput="formatPhone(this)">
             <button class="nav-btn" style="background:var(--orange); margin-top:10px;" onclick="submitNotify()">Надіслати заявку</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО СТИЛИЗОВАННОГО ЧЕКА -->
+    <div class="modal" id="receiptModal">
+        <div class="modal-content" style="background: transparent; padding: 0;">
+            <div class="receipt-card">
+                <div class="receipt-header">
+                    <div class="receipt-title">🛍️ Магазин Гаджетів</div>
+                    <div style="font-size:11px; opacity:0.6; margin-bottom:6px;">м. Чугуїв, бул. Центральний, 8</div>
+                    <div class="receipt-order-id" id="receiptOrderId">ЧЕК #ORD-0000</div>
+                </div>
+
+                <div class="receipt-body">
+                    <div style="margin-bottom:10px; opacity:0.8;" id="receiptClientInfo">...</div>
+                    <div style="border-top: 1px dashed var(--hint); padding-top: 8px;" id="receiptItemsList"></div>
+                    <div class="receipt-row receipt-row-bold">
+                        <span>РАЗОМ ДО СПЛАТИ:</span>
+                        <span id="receiptTotalSum" style="color:var(--accent);">0 грн</span>
+                    </div>
+                </div>
+
+                <div class="receipt-qr-box">
+                    <div id="qrcode"></div>
+                    <div style="font-size:10px; color:#000; margin-top:6px; font-weight:700;">Показать продавцу на кассе</div>
+                </div>
+
+                <div class="receipt-footer-text">
+                    ⏱️ Бронь діє 24 години до: <b id="receiptExpireTimer">...</b><br>
+                    Дякуємо за замовлення! Чекаємо на вас!
+                </div>
+            </div>
+
+            <button class="nav-btn" style="background: var(--green);" onclick="closeReceiptAndExit()">✅ Готово (Закрити)</button>
         </div>
     </div>
 
@@ -1082,21 +1196,68 @@
             if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
             if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
             
+            let orderNum = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ type: isBooking ? 'booking' : 'order', items: cart, name: name, phone: phoneInput })
+                body: JSON.stringify({ 
+                    type: isBooking ? 'booking' : 'order', 
+                    items: cart, 
+                    name: name, 
+                    phone: phoneInput,
+                    order_id: orderNum
+                })
             }).then(() => { 
                 triggerHaptic('success');
-                let msg = isBooking 
-                    ? 'Ваш товар успішно заброньовано на 24 години! Чекаємо на вас у магазині.' 
-                    : 'Дякуємо! Ваше замовлення прийнято.';
-                alert(msg); 
-                localStorage.removeItem('cart'); 
-                cart = []; 
-                updateUI(); 
-                closeModal(); 
-                tg.close(); 
+                showReceipt(orderNum, name, phoneInput, isBooking);
             });
+        }
+
+        function showReceipt(orderId, name, phone, isBooking) {
+            document.getElementById('cartModal').style.display = 'none';
+            document.getElementById('receiptOrderId').innerText = `ЧЕК #${orderId}`;
+            document.getElementById('receiptClientInfo').innerHTML = `👤 <b>Клієнт:</b> ${name}<br>📞 <b>Тел:</b> ${phone}`;
+
+            let itemsHtml = cart.map(i => `
+                <div class="receipt-row">
+                    <span>${i.title}</span>
+                    <b>${i.price} грн</b>
+                </div>
+            `).join('');
+            document.getElementById('receiptItemsList').innerHTML = itemsHtml;
+
+            let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
+            document.getElementById('receiptTotalSum').innerText = `${totalPrice} грн`;
+
+            let now = new Date();
+            now.setHours(now.getHours() + 24);
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            let day = now.getDate().toString().padStart(2, '0');
+            let month = (now.getMonth() + 1).toString().padStart(2, '0');
+            document.getElementById('receiptExpireTimer').innerText = `${hours}:${minutes} (${day}.${month})`;
+
+            let qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: `ORDER:${orderId}|TOTAL:${totalPrice}|CLIENT:${name}`,
+                width: 130,
+                height: 130,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+
+        function closeReceiptAndExit() {
+            triggerHaptic('light');
+            localStorage.removeItem('cart'); 
+            cart = []; 
+            updateUI(); 
+            document.getElementById('receiptModal').style.display = 'none';
+            tg.close();
         }
 
         function applyFilters() {
