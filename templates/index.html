@@ -220,7 +220,6 @@
             to { transform: scale(1); opacity: 1; }
         }
 
-        /* БЕЙДЖИ ПОПУЛЯРНОСТИ И ПРОСМОТРОВ */
         .popularity-tag {
             display: inline-flex;
             align-items: center;
@@ -270,9 +269,40 @@
             box-sizing: border-box;
             border: none;
             filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.2s ease;
         }
         .product-card:hover .product-img { transform: scale(1.03); }
+
+        /* ИНТЕРАКТИВНЫЕ ЦВЕТОВЫЕ КРУЖКИ */
+        .color-swatches-title {
+            font-size: 11px;
+            opacity: 0.5;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
+        .color-swatches-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+            box-shadow: 0 0 0 1px var(--hint);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .color-swatch:active { transform: scale(0.85); }
+        .color-swatch.active {
+            box-shadow: 0 0 0 2px var(--accent);
+            transform: scale(1.1);
+        }
 
         .product-title { font-weight: 800; font-size: 18px; margin-bottom: 4px; letter-spacing: -0.4px; line-height: 1.25; }
         .product-desc { font-size: 13px; opacity: 0.65; margin-bottom: 12px; line-height: 1.4; }
@@ -499,7 +529,14 @@
                 {% elif 'акция' in status_str or 'акція' in status_str or 'скидк' in status_str %}<div class="badge badge-sale">🏷️ ЗНИЖКА</div>{% endif %}
             {% endif %}
 
-            {% if p.get('Фото') %}<img src="{{ p.get('Фото') }}" alt="{{ p.get('Название', '') }}" class="product-img">{% endif %}
+            {% set photos = p.get('photo_list', []) %}
+            {% set colors = p.get('color_list', []) %}
+            
+            {% if photos|length > 0 %}
+                <img src="{{ photos[0] }}" alt="{{ p.get('Название', '') }}" class="product-img" id="img-{{ outer_index }}">
+            {% elif p.get('Фото') %}
+                <img src="{{ p.get('Фото') }}" alt="{{ p.get('Название', '') }}" class="product-img" id="img-{{ outer_index }}">
+            {% endif %}
 
             {% if 'нет' in status_str or 'немає' in status_str or 'закончил' in status_str %}
                 <div class="stock-status status-out-stock"><span class="status-dot dot-red"></span> Немає в наявності</div>
@@ -512,7 +549,6 @@
                 {% set is_out_of_stock = false %}
             {% endif %}
 
-            <!-- Динамическая плашка популярности -->
             {% if 'хит' in status_str or 'hit' in status_str %}
                 <div class="popularity-tag tag-sales">
                     🔥 <span class="smart-count-sales" data-idx="{{ outer_index }}">...</span> замовлень за тиждень
@@ -524,6 +560,22 @@
             {% endif %}
 
             <div class="product-title" id="title-{{ outer_index }}">{{ p.get('Название', '') }}</div>
+
+            <!-- ИНТЕРАКТИВНЫЕ ЦВЕТОВЫЕ КРУЖКИ -->
+            {% if colors|length > 0 %}
+                <div class="color-swatches-title">Оберіть колір:</div>
+                <div class="color-swatches-container" id="colors-{{ outer_index }}">
+                    {% for c in colors %}
+                        {% set photo_url = photos[loop.index0] if loop.index0 < photos|length else (photos[0] if photos|length > 0 else '') %}
+                        <div class="color-swatch {% if loop.first %}active{% endif %}" 
+                             data-color="{{ c }}" 
+                             data-img="{{ photo_url }}"
+                             onclick="selectColor('{{ outer_index }}', '{{ c }}', '{{ photo_url }}', this)">
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             <div class="product-desc">{{ p.get('Описание', '') }}</div>
 
             {% if cat_lower in ['телефоны', 'телефони'] %}
@@ -578,11 +630,11 @@
                 {% endif %}
 
             {% else %}
-                <div class="product-price">{{ p.get('Цена', '0') }} грн</div>
+                <div class="product-price">{{ p.get('price_list', [p.get('Цена', '0')])[0] }} грн</div>
                 {% if is_out_of_stock %}
                     <button class="buy-btn buy-btn-notify" onclick="subscribeNotify('{{ p.get('Название', '') }}')">🔔 Повідомити про появу</button>
                 {% else %}
-                    <button class="buy-btn" onclick="addToCart('{{ p.get('Название', '') }}', '{{ p.get('Цена', '0') }}', this)">У кошик</button>
+                    <button class="buy-btn" onclick="addToCart('{{ p.get('Название', '') }}', '{{ p.get('price_list', [p.get('Цена', '0')])[0] }}', this)">У кошик</button>
                 {% endif %}
             {% endif %}
         </div>
@@ -673,7 +725,49 @@
         }
         setInterval(nextSlide, 4000);
 
-        // ЛОГИКА СМАРТ-СЧЁТЧИКОВ (БЕЗ НАКРУТКИ АДМИНА)
+        // КАРТА ИМЕН ЦВЕТОВ В ЦВЕТОВЫЕ ХЕШ-КОДЫ
+        const colorPalette = {
+            'черный': '#1c1c1e', 'чорний': '#1c1c1e', 'black': '#1c1c1e',
+            'белый': '#ffffff', 'білий': '#ffffff', 'white': '#ffffff',
+            'синий': '#007aff', 'синій': '#007aff', 'blue': '#007aff',
+            'зеленый': '#34c759', 'зелений': '#34c759', 'green': '#34c759',
+            'красный': '#ff3b30', 'червоний': '#ff3b30', 'red': '#ff3b30',
+            'серый': '#8e8e93', 'сірий': '#8e8e93', 'gray': '#8e8e93',
+            'золотой': '#ffcc00', 'золотий': '#ffcc00', 'gold': '#ffcc00',
+            'фиолетовый': '#af52de', 'фіолетовий': '#af52de', 'purple': '#af52de',
+            'титан': '#8a8a8e', 'titanium': '#8a8a8e'
+        };
+
+        function initColorSwatches() {
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                let colorName = swatch.getAttribute('data-color').toLowerCase().trim();
+                let hex = colorPalette[colorName] || '#8e8e93';
+                swatch.style.backgroundColor = hex;
+            });
+        }
+
+        function selectColor(cardIdx, colorVal, imgUrl, el) {
+            triggerHaptic('selection');
+            let parent = el.parentElement;
+            parent.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+
+            if (!selectedPhoneState[cardIdx]) selectedPhoneState[cardIdx] = {};
+            selectedPhoneState[cardIdx].color = colorVal;
+
+            if (imgUrl) {
+                let imgEl = document.getElementById(`img-${cardIdx}`);
+                if (imgEl) {
+                    imgEl.style.opacity = '0.3';
+                    setTimeout(() => {
+                        imgEl.src = imgUrl;
+                        imgEl.style.opacity = '1';
+                    }, 150);
+                }
+            }
+        }
+
+        // ЛОГИКА СМАРТ-СЧЁТЧИКОВ
         function initSmartCounters() {
             let today = new Date().getDate();
             let hour = new Date().getHours();
@@ -690,7 +784,11 @@
                 el.innerText = count;
             });
         }
-        document.addEventListener("DOMContentLoaded", initSmartCounters);
+
+        document.addEventListener("DOMContentLoaded", function() {
+            initSmartCounters();
+            initColorSwatches();
+        });
 
         function triggerHaptic(type) {
             if (!tg.HapticFeedback) return;
@@ -734,20 +832,32 @@
             btnEl.classList.add('active');
 
             document.getElementById(`price-display-${cardIdx}`).innerText = `${priceVal} грн`;
-            selectedPhoneState[cardIdx] = { memory: memoryVal, price: priceVal };
+            if (!selectedPhoneState[cardIdx]) selectedPhoneState[cardIdx] = {};
+            selectedPhoneState[cardIdx].memory = memoryVal;
+            selectedPhoneState[cardIdx].price = priceVal;
         }
 
         function addPhoneToCart(baseTitle, cardIdx, btnElement) {
-            let state = selectedPhoneState[cardIdx];
-            let memory = state ? state.memory : '';
-            let price = state ? state.price : document.getElementById(`price-display-${cardIdx}`).innerText.replace(' грн', '');
+            let state = selectedPhoneState[cardIdx] || {};
+            let memory = state.memory || '';
+            let color = state.color || '';
+            let price = state.price || document.getElementById(`price-display-${cardIdx}`).innerText.replace(' грн', '');
             
             if (!memory) {
                 let activeBtn = document.querySelector(`#card-${cardIdx} .memory-btn.active`);
                 if (activeBtn) memory = activeBtn.innerText.trim();
             }
 
-            let fullTitle = (memory && memory !== '-') ? `${baseTitle} (${memory})` : baseTitle;
+            if (!color) {
+                let activeSwatch = document.querySelector(`#card-${cardIdx} .color-swatch.active`);
+                if (activeSwatch) color = activeSwatch.getAttribute('data-color');
+            }
+
+            let metaParts = [];
+            if (memory && memory !== '-') metaParts.push(memory);
+            if (color) metaParts.push(color);
+
+            let fullTitle = metaParts.length > 0 ? `${baseTitle} (${metaParts.join(', ')})` : baseTitle;
             addToCart(fullTitle, price, btnElement);
         }
 
