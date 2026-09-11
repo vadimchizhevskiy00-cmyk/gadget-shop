@@ -273,7 +273,6 @@
         }
         .product-card:hover .product-img { transform: scale(1.03); }
 
-        /* ИНТЕРАКТИВНЫЕ ЦВЕТОВЫЕ КРУЖКИ */
         .color-swatches-title {
             font-size: 11px;
             opacity: 0.5;
@@ -385,6 +384,10 @@
             letter-spacing: -0.2px;
             transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease;
             box-shadow: 0 4px 14px rgba(0, 122, 255, 0.25);
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+            box-sizing: border-box;
         }
         .buy-btn:active { transform: scale(0.96); }
         .buy-btn.added {
@@ -392,7 +395,8 @@
             box-shadow: 0 4px 14px rgba(52, 199, 89, 0.3) !important;
             animation: pulseGreen 0.4s ease;
         }
-        .buy-btn-notify { background: var(--orange); box-shadow: 0 4px 14px rgba(255, 149, 0, 0.25); }
+        .buy-btn-notify { background: var(--orange); box-shadow: 0 4px 14px rgba(255, 149, 0, 0.25); margin-bottom: 8px; }
+        .buy-btn-ask { background: #229ED9; box-shadow: 0 4px 14px rgba(34, 158, 217, 0.25); }
 
         @keyframes pulseGreen {
             0% { transform: scale(1); }
@@ -603,6 +607,7 @@
                 
                 {% if is_out_of_stock %}
                     <button class="buy-btn buy-btn-notify" onclick="subscribeNotify('{{ p.get('Название', '') }}')">🔔 Повідомити про появу</button>
+                    <button class="buy-btn buy-btn-ask" onclick="askManager('{{ p.get('Название', '') }}')">💬 Запитати менеджера в Telegram</button>
                 {% else %}
                     <button class="buy-btn" id="btn-{{ outer_index }}" onclick="addPhoneToCart('{{ p.get('Название', '') }}', '{{ outer_index }}', this)">У кошик</button>
                 {% endif %}
@@ -625,6 +630,7 @@
                 
                 {% if is_out_of_stock %}
                     <button class="buy-btn buy-btn-notify" onclick="subscribeNotify('{{ p.get('Название', '') }}')">🔔 Повідомити про появу</button>
+                    <button class="buy-btn buy-btn-ask" onclick="askManager('{{ p.get('Название', '') }}')">💬 Запитати менеджера в Telegram</button>
                 {% else %}
                     <button class="buy-btn" onclick="addWithOptions('{{ p.get('Название', '') }}', 'select-{{ outer_index }}', this)">У кошик</button>
                 {% endif %}
@@ -633,6 +639,7 @@
                 <div class="product-price">{{ p.get('price_list', [p.get('Цена', '0')])[0] }} грн</div>
                 {% if is_out_of_stock %}
                     <button class="buy-btn buy-btn-notify" onclick="subscribeNotify('{{ p.get('Название', '') }}')">🔔 Повідомити про появу</button>
+                    <button class="buy-btn buy-btn-ask" onclick="askManager('{{ p.get('Название', '') }}')">💬 Запитати менеджера в Telegram</button>
                 {% else %}
                     <button class="buy-btn" onclick="addToCart('{{ p.get('Название', '') }}', '{{ p.get('price_list', [p.get('Цена', '0')])[0] }}', this)">У кошик</button>
                 {% endif %}
@@ -783,6 +790,19 @@
                 let count = ((idx * 5 + today * 4) % 14) + 5;
                 el.innerText = count;
             });
+        }
+
+        // БЫСТРЫЙ ПЕРЕХОД К МЕНЕДЖЕРУ В TELEGRAM
+        function askManager(productTitle) {
+            triggerHaptic('medium');
+            let text = `Доброго дня! Цікавить товар: ${productTitle}. Підкажіть, будь ласка, терміни доставки та наявність.`;
+            let managerUsername = "smthwrng121";
+            let url = `https://t.me/${managerUsername}?text=${encodeURIComponent(text)}`;
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function() {
