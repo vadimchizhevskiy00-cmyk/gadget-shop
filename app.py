@@ -1,253 +1,128 @@
+import os
+import re
 import csv
 import io
-import json
-import os
-import sys
+import asyncio
 import threading
 import time
-import traceback
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, render_template, request, jsonify
 import requests
-import telebot
-from telebot import types
+from telegram import Bot, Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# === НАСТРОЙКИ ===
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
-WEB_APP_URL = os.environ.get(
-    "WEB_APP_URL", "https://gadget-shop-v5kh.onrender.com"
-)
-CSV_URL = os.environ.get(
-    "CSV_URL",
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv",
-)
-
-SUBS_FILE = "subscriptions.json"
-
-bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
+# Токены и URL (берутся из переменных окружения Render / OS)
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
+CSV_URL = os.environ.get("CSV_URL", "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv")
 
-# === ХРАНИЛИЩЕ ПОДПИСОК ===
-def load_subscriptions():
-    if not os.path.exists(SUBS_FILE):
-        return []
-    try:
-        with open(SUBS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading subs: {e}", file=sys.stderr)
-        return []
-
-
-def save_subscriptions(subs):
-    try:
-        with open(SUBS_FILE, "w", encoding="utf-8") as f:
-            json.dump(subs, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Error saving subs: {e}", file=sys.stderr)
-
+# Глобальные структуры для отслеживания наличия и подписок
+notification_subscriptions = {}
+last_stock_status = {}
 
 def clean_val(val):
     if val is None:
         return ""
     return str(val).strip()
 
-
-def parse_memory_and_prices(memory_raw, price_raw):
-    m_str = clean_val(memory_raw)
-    p_str = clean_val(price_raw)
-    m_list = [x.strip() for x in m_str.split("/") if x.strip()] if m_str else []
-    p_list = [x.strip() for x in p_str.split("/") if x.strip()] if p_str else []
-    return m_list, p_list
-
-
 def get_products():
     try:
         response = requests.get(CSV_URL, timeout=10)
-        response.raise_for_status()
-        response.encoding = "utf-8"
-        reader = csv.DictReader(io.StringIO(response.text))
-
+        response.encoding = 'utf-8'
+        if response.status_code != 200:
+            return []
+        
+        csv_data = response.text
+        reader = csv.DictReader(io.StringIO(csv_data))
         products = []
+        
         for row in reader:
-            clean_row = {clean_val(k): clean_val(v) for k, v in row.items()}
-            m_list, p_list = parse_memory_and_prices(
-                clean_row.get("Память", ""), clean_row.get("Цена", "")
-            )
-            clean_row["memory_list"] = m_list
-            clean_row["price_list"] = p_list
-
-            clean_row["Процессор"] = clean_val(clean_row.get("Процессор", "-"))
-            clean_row["Мощность"] = clean_val(clean_row.get("Мощность", "-"))
-            clean_row["Экран"] = clean_val(clean_row.get("Экран", "-"))
-            clean_row["Камера"] = clean_val(clean_row.get("Камера", "-"))
-            clean_row["Батарея"] = clean_val(clean_row.get("Батарея", "-"))
-
-            products.append(clean_row)
-
+            cleaned_row = {clean_val(k): clean_val(v) for k, v in row.items()}
+            
+            # Разбор памяти и цен через запятую
+            memory_raw = cleaned_row.get("Память", "") or cleaned_row.get("Пам'ять", "")
+            price_raw = cleaned_row.get("Цена", "0") or cleaned_row.get("Ціна", "0")
+            
+            memory_list = [m.strip() for m in memory_raw.split(",") if m.strip()] if memory_raw else []
+            price_list = [p.strip() for p in price_raw.split(",") if p.strip()] if price_raw else [price_raw]
+            
+            cleaned_row["memory_list"] = memory_list
+            cleaned_row["price_list"] = price_list
+            
+            # Разбор цветов и соответствующих фото через запятую
+            color_raw = cleaned_row.get("Цвет", "") or cleaned_row.get("Колір", "")
+            photo_raw = cleaned_row.get("Фото", "")
+            
+            color_list = [c.strip() for c in color_raw.split(",") if c.strip()] if color_raw else []
+            photo_list = [p.strip() for p in photo_raw.split(",") if p.strip()] if photo_raw else []
+            
+            cleaned_row["color_list"] = color_list
+            cleaned_row["photo_list"] = photo_list
+            
+            products.append(cleaned_row)
+            
         return products
     except Exception as e:
-        print(f"Error fetching CSV: {e}", file=sys.stderr)
+        print(f"Error fetching CSV: {e}")
         return []
 
-
-def send_telegram_msg(chat_id, text):
-    if not TELEGRAM_BOT_TOKEN or not chat_id:
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
-    try:
-        requests.post(url, json=payload, timeout=5)
-    except Exception as e:
-        print(f"Error sending TG msg: {e}", file=sys.stderr)
-
-
-# === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
-def check_stock_subscriptions():
+# --- ФОНОВЫЙ ТРЕКЕР ИЗМЕНЕНИЯ НАЛИЧИЯ (15 СЕК) ---
+def check_stock_changes():
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
     while True:
         try:
-            time.sleep(15)
-            subs = load_subscriptions()
-            if not subs:
-                continue
-
             products = get_products()
-            if not products:
-                continue
-
-            remaining_subs = []
-            updated = False
-
-            for sub in subs:
-                p_name = sub.get("product_name", "").strip().lower()
-                chat_id = sub.get("chat_id")
-
-                found_and_in_stock = False
-                matched_title = ""
-
-                for p in products:
-                    prod_title = clean_val(p.get("Название", "")).strip().lower()
-                    status = clean_val(p.get("Статус", "")).strip().lower()
-
-                    if prod_title in p_name or p_name in prod_title:
-                        is_out = any(
-                            kw in status for kw in ["нет", "немає", "закончил"]
-                        )
-                        if not is_out:
-                            found_and_in_stock = True
-                            matched_title = p.get("Название", "")
-                            break
-
-                if found_and_in_stock:
-                    msg = (
-                        f"🎉 <b>Чудові новини! Товар з'явився в наявності!</b>\n\n"
-                        f"📦 <b>{matched_title}</b> вже чекає на вас у нашому магазині!\n\n"
-                        f"Завітайте до нас або забронюйте товар у каталозі прямо зараз. 📱"
-                    )
-                    send_telegram_msg(chat_id, msg)
-                    updated = True
-                else:
-                    remaining_subs.append(sub)
-
-            if updated:
-                save_subscriptions(remaining_subs)
-
+            for p in products:
+                title = clean_val(p.get("Название", "") or p.get("Назва", ""))
+                status = clean_val(p.get("Статус", "")).lower()
+                
+                is_in_stock = not ('нет' in status or 'немає' in status or 'закончил' in status)
+                
+                if title in last_stock_status:
+                    was_in_stock = last_stock_status[title]
+                    if not was_in_stock and is_in_stock:
+                        if title in notification_subscriptions and notification_subscriptions[title]:
+                            subscribers = notification_subscriptions[title]
+                            price = p.get("price_list", [p.get("Цена", "0")])[0]
+                            msg = f"🎉 **Товар знову в наявності!**\n\n📱 **{title}**\n💰 Ціна: {price} грн\n\nЗавітайте до магазину або забронюйте прямо зараз!"
+                            
+                            for chat_id in subscribers:
+                                try:
+                                    asyncio.run(bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown"))
+                                except Exception as err:
+                                    print(f"Failed to send notification to {chat_id}: {err}")
+                            
+                            notification_subscriptions[title] = []
+                            
+                last_stock_status[title] = is_in_stock
         except Exception as e:
-            print(f"Error in stock checker: {e}", file=sys.stderr)
+            print(f"Error in stock tracker loop: {e}")
+        
+        time.sleep(15)
 
-
-# === ТЕЛЕГРАМ БОТ (ОБРАБОТКА КОМАНД) ===
-@bot.message_handler(commands=["start", "help"])
-def start_cmd(message):
-    try:
-        web_app = types.WebAppInfo(url=WEB_APP_URL)
-        reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        reply_kb.add(
-            types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
-        )
-        reply_kb.add(
-            types.KeyboardButton(text="📍 Магазин та контакти"),
-            types.KeyboardButton(text="❓ Часті запитання (FAQ)"),
-        )
-
-        welcome_text = (
-            f"Вітаємо, {message.from_user.first_name}! 👋\n\n"
-            f"Ласкаво просимо до нашого магазину гаджетів та аксесуарів.\n\n"
-            f"Обирайте потрібний розділ у меню нижче! 👇"
-        )
-        bot.send_message(message.chat.id, welcome_text, reply_markup=reply_kb)
-    except Exception as e:
-        print(f"Помилка /start: {e}", file=sys.stderr)
-
-
-@bot.message_handler(
-    func=lambda msg: msg.text and "Магазин та контакти" in msg.text
-)
-def contacts_cmd(message):
-    text = (
-        "📍 <b>Наш магазин чекає на вас!</b>\n\n"
-        "🏢 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
-        "⏰ <b>Графік роботи:</b>Пн-Пт: 08:00 — 18:00 | Сб-Нд: 08:00 — 17:00\n"
-        "📞 <b>Телефон:</b> +380 97 391 64 00, +380 63 189 16 83\n"
-        "💬 <b>Менеджер:</b> @smthwrng121"
-    )
-    bot.send_message(message.chat.id, text, parse_mode="HTML")
-
-
-@bot.message_handler(
-    func=lambda msg: msg.text and "Часті запитання" in msg.text
-)
-def faq_cmd(message):
-    text = (
-        "❓ <b>Часті запитання:</b>\n\n"
-        "1️⃣ <b>Чи є гарантія на техніку?</b>\n"
-        "— Так! На нову техніку діє гарантія 12 місяців, на б/в — від 3 місяців.\n\n"
-        "2️⃣ <b>Як працює бронювання?</b>\n"
-        "— Ви обираєте товар у веб-каталозі, тиснете «Забронювати», і ми відкладаємо його для вас на 24 години.\n\n"
-        "3️⃣ <b>Чи допомагаєте з налаштуванням та переносом даних?</b>\n"
-        "— Так, наші спеціалісти допоможуть перенести всі ваші контакти, фото та додатки на новий пристрій при покупці у магазині."
-    )
-    bot.send_message(message.chat.id, text, parse_mode="HTML")
-
-
-# === FLASK РУТЫ ===
+# --- МАРШРУТЫ FLASK ---
 @app.route("/")
 def index():
-    try:
-        category = request.args.get("category", "").strip()
-        search = request.args.get("search", "").strip().lower()
-
-        products = get_products() or []
-        filtered_products = []
-
-        for p in products:
-            p_cat = clean_val(p.get("Категория", "")).lower()
-            if category and category.lower() != "all":
-                if p_cat != category.lower():
-                    continue
-
-            p_title = clean_val(p.get("Название", "")).lower()
-            p_compat = clean_val(p.get("Совместимость", "")).lower()
-
-            if search and (search not in p_title and search not in p_compat):
-                continue
-
-            filtered_products.append(p)
-
-        return render_template(
-            "index.html",
-            products=filtered_products,
-            category=category,
-            search=search,
-        )
-    except Exception as e:
-        print(
-            f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}",
-            file=sys.stderr,
-        )
-        return f"<h3>Помилка завантаження:</h3><pre>{e}</pre>", 500
-
+    category = request.args.get("category", "").strip()
+    search = request.args.get("search", "").strip().lower()
+    
+    all_products = get_products()
+    filtered = []
+    
+    for p in all_products:
+        p_cat = clean_val(p.get("Категория", "") or p.get("Категорія", "")).lower()
+        p_title = clean_val(p.get("Название", "") or p.get("Назва", "")).lower()
+        
+        if category and p_cat != category.lower():
+            continue
+            
+        if search and search not in p_title:
+            continue
+            
+        filtered.append(p)
+        
+    return render_template("index.html", products=filtered, category=category, search=search)
 
 @app.route("/api/accessories")
 def api_accessories():
@@ -260,122 +135,94 @@ def api_accessories():
     film_accessories = []
 
     for p in products:
-        cat = clean_val(p.get("Категория", "")).lower()
+        cat = clean_val(p.get("Категория", "") or p.get("Категорія", "")).lower()
 
-        # Работаем только с аксессуарами
         if cat in ["чехлы", "стекла", "пленки", "чохли", "скло", "плівки"]:
-            compat = clean_val(p.get("Совместимость", "")).lower()
-            title = clean_val(p.get("Название", "")).lower()
+            compat = clean_val(p.get("Совместимость", "") or p.get("Сумісність", "")).lower()
+            title = clean_val(p.get("Название", "") or p.get("Назва", "")).lower()
 
             item = {
-                "Название": p.get("Название", ""),
-                "Цена": p.get("Цена", "0"),
+                "Название": p.get("Название", "") or p.get("Назва", ""),
+                "Цена": p.get("price_list", [p.get("Цена", "0")])[0],
             }
 
-            # 1. Если есть точное совпадение модели в названии или совместимости
             if model in compat or model in title:
                 exact_accessories.append(item)
-
-            # 2. Собираем только плёнки как универсальный фоллбек
-            elif cat in ["пленки", "плівки"] or (
-                "пленка" in title or "плівка" in title
-            ):
+            elif cat in ["пленки", "плівки"] or ("пленка" in title or "плівка" in title):
                 film_accessories.append(item)
 
-    # Если нашли точные аксессуары под модель — отдаём их (чехлы, стёкла, плёнки).
-    # Если под модель ничего не заполнено — предлагаем ТОЛЬКО плёнки!
     result = exact_accessories if exact_accessories else film_accessories
     return jsonify(result[:4])
 
-
 @app.route("/order", methods=["POST"])
-def order():
-    try:
-        data = request.json or {}
-        req_type = data.get("type", "order")
+def place_order():
+    data = request.json or {}
+    order_type = data.get("type", "order")
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
+    
+    if order_type == "subscribe_notify":
+        chat_id = data.get("chat_id")
+        product_name = data.get("product_name")
+        if chat_id and product_name:
+            if product_name not in notification_subscriptions:
+                notification_subscriptions[product_name] = []
+            if chat_id not in notification_subscriptions[product_name]:
+                notification_subscriptions[product_name].append(chat_id)
+        return jsonify({"status": "ok"})
 
-        if req_type in ["subscribe_notify", "notify"]:
-            chat_id = data.get("chat_id")
-            product_name = data.get("product_name")
-            name = data.get("name", "Клієнт")
-            phone = data.get("phone", "-")
-
-            if chat_id:
-                subs = load_subscriptions()
-                if not any(
-                    s.get("chat_id") == chat_id
-                    and s.get("product_name") == product_name
-                    for s in subs
-                ):
-                    subs.append(
-                        {
-                            "chat_id": chat_id,
-                            "product_name": product_name,
-                            "name": name,
-                            "phone": phone,
-                        }
-                    )
-                    save_subscriptions(subs)
-
-            admin_msg = (
-                f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
-                f"📦 <b>Товар:</b> {product_name}\n"
-                f"👤 <b>Клієнт:</b> {name}\n"
-                f"📞 <b>Телефон:</b> {phone}\n"
-                f"💬 <b>Chat ID:</b> {chat_id or 'Немає'}"
-            )
-            send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
-            return jsonify({"status": "ok"})
-
-        else:
-            items = data.get("items", [])
-            name = data.get("name")
-            phone = data.get("phone")
-
-            title_hdr = (
-                "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>"
-                if req_type == "booking"
-                else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
-            )
-
-            total_sum = sum(int(i.get("price", 0)) for i in items)
-            items_str = "\n".join(
-                [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
-            )
-
-            admin_msg = (
-                f"{title_hdr}\n\n"
-                f"👤 <b>Клієнт:</b> {name}\n"
-                f"📞 <b>Телефон:</b> {phone}\n\n"
-                f"📦 <b>Товари:</b>\n{items_str}\n\n"
-                f"💰 <b>Разом:</b> {total_sum} грн"
-            )
-            send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
-            return jsonify({"status": "ok"})
-
-    except Exception as e:
-        print(f"Error handling order: {e}", file=sys.stderr)
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-# === ЗАПУСК И ОБРАБОТКА ПОТОКОВ ===
-def start_bot_polling():
-    while True:
+    if order_type in ["order", "booking"]:
+        name = data.get("name", "")
+        phone = data.get("phone", "")
+        items = data.get("items", [])
+        
+        items_text = "\n".join([f"• {i['title']} — {i['price']} грн" for i in items])
+        
+        total = 0
+        for i in items:
+            p_val = str(i.get('price', '0')).replace('грн', '').strip()
+            if p_val.isdigit():
+                total += float(p_val)
+        
+        header = "📌 **НОВЕ БРОНЮВАННЯ (24 ГОД)**" if order_type == "booking" else "🛍️ **НОВЕ ЗАМОВЛЕННЯ**"
+        msg = f"{header}\n\n👤 **Клієнт:** {name}\n📞 **Телефон:** {phone}\n\n📦 **Товари:**\n{items_text}\n\n💰 **Разом:** {total} грн"
+        
         try:
-            bot.remove_webhook()
-            print("Запуск polling бота...", file=sys.stderr)
-            bot.infinity_polling(
-                timeout=20, long_polling_timeout=10, skip_pending=True
-            )
+            asyncio.run(bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, parse_mode="Markdown"))
         except Exception as e:
-            print(f"Ошибка polling: {e}. Перезапуск...", file=sys.stderr)
-            time.sleep(3)
+            print(f"Error sending order notification: {e}")
+            
+        return jsonify({"status": "ok"})
 
+    return jsonify({"status": "error"}), 400
 
-# Запускаем фоновые задачи до вызова Flask
-threading.Thread(target=start_bot_polling, daemon=True).start()
-threading.Thread(target=check_stock_subscriptions, daemon=True).start()
+# --- ИНИЦИАЛИЗАЦИЯ И ЗАПУСК TELEGRAM-БОТА ---
+async def start_bot_app():
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    
+    async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("Ласкаво просимо! Натисніть кнопку нижче, щоб відкрити магазин.")
+
+    application.add_handler(CommandHandler("start", start_cmd))
+    
+    # Удаление вебхука перед поллингом для защиты от конфликтов
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+
+def run_async_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_bot_app())
+    loop.run_forever()
 
 if __name__ == "__main__":
+    # 1. Запуск потока отслеживания остатков
+    threading.Thread(target=check_stock_changes, daemon=True).start()
+    
+    # 2. Запуск потока Telegram Bot (CommandHandler /start)
+    threading.Thread(target=run_async_loop, daemon=True).start()
+    
+    # 3. Запуск веб-сервера Flask
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
