@@ -54,7 +54,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Декоративное неоновое пятно на фоне для глубокого эффекта стекла */
         body {
             padding: 16px;
             display: flex;
@@ -1230,6 +1229,9 @@
             let phoneInput = document.getElementById('clientPhone').value.trim();
             let isBooking = document.getElementById('bookingCheckbox').checked;
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
+            
+            // Получаем chat_id пользователя из Telegram WebApp
+            let userChatId = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user.id : null;
 
             if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
             if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
@@ -1243,7 +1245,8 @@
                     items: cart, 
                     name: name, 
                     phone: phoneInput,
-                    order_id: orderNum
+                    order_id: orderNum,
+                    chat_id: userChatId
                 })
             }).then(() => { 
                 triggerHaptic('success');
@@ -1275,7 +1278,7 @@
             let month = (now.getMonth() + 1).toString().padStart(2, '0');
             document.getElementById('receiptExpireTimer').innerText = `${hours}:${minutes} (${day}.${month})`;
 
-            // Прямая ссылка для проверки продавцом
+            // Прямая ссылка для сканирования продавцом
             let checkUrl = `${window.location.origin}/admin/check?order=${orderId}`;
 
             let qrContainer = document.getElementById('qrcode');
