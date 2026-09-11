@@ -19,29 +19,30 @@ WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://gadget-shop-v5kh.onrender.c
 CSV_URL = os.environ.get("CSV_URL", "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv")
 
 SUBS_FILE = "subscriptions.json"
+ORDERS_FILE = "orders.json"
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
 
-# === ХРАНИЛИЩЕ ПОДПИСОК ===
-def load_subscriptions():
-    if not os.path.exists(SUBS_FILE):
-        return []
+# === ХРАНИЛИЩЕ ПОДПИСОК И ЗАКАЗОВ ===
+def load_json(filepath):
+    if not os.path.exists(filepath):
+        return [] if filepath == SUBS_FILE else {}
     try:
-        with open(SUBS_FILE, "r", encoding="utf-8") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error loading subs: {e}", file=sys.stderr)
-        return []
+        print(f"Error loading {filepath}: {e}", file=sys.stderr)
+        return [] if filepath == SUBS_FILE else {}
 
 
-def save_subscriptions(subs):
+def save_json(filepath, data):
     try:
-        with open(SUBS_FILE, "w", encoding="utf-8") as f:
-            json.dump(subs, f, ensure_ascii=False, indent=2)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Error saving subs: {e}", file=sys.stderr)
+        print(f"Error saving {filepath}: {e}", file=sys.stderr)
 
 
 def clean_val(val):
@@ -53,7 +54,6 @@ def clean_val(val):
 def parse_memory_and_prices(memory_raw, price_raw):
     m_str = clean_val(memory_raw)
     p_str = clean_val(price_raw)
-    # Обрабатываем разделение как через слэш, так и через запятую
     m_del = "/" if "/" in m_str else ","
     p_del = "/" if "/" in p_str else ","
     
@@ -81,7 +81,6 @@ def get_products():
         for row in reader:
             clean_row = {clean_val(k): clean_val(v) for k, v in row.items()}
             
-            # Парсинг Памяти и Цены
             m_list, p_list = parse_memory_and_prices(
                 clean_row.get("Память", "") or clean_row.get("Пам'ять", ""),
                 clean_row.get("Цена", "") or clean_row.get("Ціна", "")
@@ -89,7 +88,6 @@ def get_products():
             clean_row["memory_list"] = m_list
             clean_row["price_list"] = p_list
 
-            # Парсинг Цвета и Фото
             c_list, photo_list = parse_colors_and_photos(
                 clean_row.get("Цвет", "") or clean_row.get("Колір", ""),
                 clean_row.get("Фото", "")
@@ -127,7 +125,7 @@ def check_stock_subscriptions():
     while True:
         try:
             time.sleep(15)
-            subs = load_subscriptions()
+            subs = load_json(SUBS_FILE)
             if not subs:
                 continue
 
@@ -170,7 +168,7 @@ def check_stock_subscriptions():
                     remaining_subs.append(sub)
 
             if updated:
-                save_subscriptions(remaining_subs)
+                save_json(SUBS_FILE, remaining_subs)
 
         except Exception as e:
             print(f"Error in stock checker: {e}", file=sys.stderr)
@@ -281,7 +279,6 @@ def api_accessories():
     for p in products:
         cat = clean_val(p.get("Категория", "")).lower()
 
-        # Работаем только с аксессуарами
         if cat in ["чехлы", "стекла", "пленки", "чохли", "скло", "плівки"]:
             compat = clean_val(p.get("Совместимость", "")).lower()
             title = clean_val(p.get("Название", "")).lower()
@@ -291,11 +288,9 @@ def api_accessories():
                 "Цена": p.get("price_list", [p.get("Цена", "0")])[0] if p.get("price_list") else p.get("Цена", "0"),
             }
 
-            # 1. Если есть точное совпадение модели в названии или совместимости
             if model in compat or model in title:
                 exact_accessories.append(item)
 
-            # 2. Собираем только плёнки как универсальный фоллбек
             elif cat in ["пленки", "плівки"] or (
                 "пленка" in title or "плівка" in title
             ):
@@ -318,7 +313,7 @@ def order():
             phone = data.get("phone", "-")
 
             if chat_id:
-                subs = load_subscriptions()
+                subs = load_json(SUBS_FILE)
                 if not any(
                     s.get("chat_id") == chat_id
                     and s.get("product_name") == product_name
@@ -332,7 +327,7 @@ def order():
                             "phone": phone,
                         }
                     )
-                    save_subscriptions(subs)
+                    save_json(SUBS_FILE, subs)
 
             admin_msg = (
                 f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
@@ -348,6 +343,28 @@ def order():
             items = data.get("items", [])
             name = data.get("name")
             phone = data.get("phone")
+            order_id = data.get("order_id", f"ORD-{int(time.time())}")
+
+            total_sum = 0
+            for i in items:
+                p_str = str(i.get("price", "0"))
+                digits = re.sub(r"[^\d]", "", p_str)
+                if digits:
+                    total_sum += int(digits)
+
+            # Сохранение заказа для сканирования QR-кода
+            orders = load_json(ORDERS_FILE)
+            orders[order_id] = {
+                "order_id": order_id,
+                "name": name,
+                "phone": phone,
+                "items": items,
+                "total": total_sum,
+                "status": "active",
+                "type": req_type,
+                "time": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            save_json(ORDERS_FILE, orders)
 
             title_hdr = (
                 "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>"
@@ -355,31 +372,87 @@ def order():
                 else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
             )
 
-            total_sum = 0
-            for i in items:
-                p_str = str(i.get("price", "0"))
-                # Безопасное извлечение числа из строки (например "12000 грн")
-                digits = re.sub(r"[^\d]", "", p_str)
-                if digits:
-                    total_sum += int(digits)
-
             items_str = "\n".join(
                 [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
             )
 
             admin_msg = (
-                f"{title_hdr}\n\n"
+                f"{title_hdr}\n"
+                f"🧾 <b>Чек:</b> #{order_id}\n\n"
                 f"👤 <b>Клієнт:</b> {name}\n"
                 f"📞 <b>Телефон:</b> {phone}\n\n"
                 f"📦 <b>Товари:</b>\n{items_str}\n\n"
                 f"💰 <b>Разом:</b> {total_sum} грн"
             )
             send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
-            return jsonify({"status": "ok"})
+            return jsonify({"status": "ok", "order_id": order_id})
 
     except Exception as e:
         print(f"Error handling order: {e}", file=sys.stderr)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# === ПРОВЕРКА И ПОГАШЕНИЕ QR-КОДА (ДЛЯ ПРОДАВЦА) ===
+@app.route("/admin/check")
+def admin_check():
+    order_id = request.args.get("order", "").strip()
+    action = request.args.get("action", "").strip()
+    orders = load_json(ORDERS_FILE)
+
+    if not order_id or order_id not in orders:
+        return "<h2 style='color:red; text-align:center; margin-top:40px;'>❌ Замовлення не знайдено!</h2>", 404
+
+    order_data = orders[order_id]
+
+    if action == "complete" and order_data["status"] == "active":
+        order_data["status"] = "completed"
+        save_json(ORDERS_FILE, orders)
+        
+        # Уведомляем администратора о выдаче товара
+        send_telegram_msg(
+            ADMIN_CHAT_ID, 
+            f"✅ <b>ТОВАР ВИДАНО!</b>\n🧾 Чек: #{order_id}\n👤 Клієнт: {order_data['name']}\n💰 Сума: {order_data['total']} грн"
+        )
+
+    # HTML-интерфейс для продавца
+    items_html = "".join([f"<li><b>{i.get('title')}</b> — {i.get('price')} грн</li>" for i in order_data["items"]])
+    status_badge = "<span style='color:green; font-weight:bold;'>🟢 АКТИВНЕ БРОНЮВАННЯ</span>" if order_data["status"] == "active" else "<span style='color:gray; font-weight:bold;'>⚪ ВИДАНО / ПОГАШЕНО</span>"
+
+    button_html = ""
+    if order_data["status"] == "active":
+        button_html = f"<a href='/admin/check?order={order_id}&action=complete' style='display:block; width:100%; text-align:center; background:#34c759; color:white; padding:16px 0; border-radius:12px; font-weight:bold; text-decoration:none; margin-top:20px; font-size:18px;'>✅ ВИДАТИ ТОВАР</a>"
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Перевірка замовлення #{order_id}</title>
+        <style>
+            body {{ font-family: -apple-system, sans-serif; background: #f2f2f7; padding: 20px; margin:0; }}
+            .card {{ background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; }}
+            h2 {{ margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px; }}
+            ul {{ padding-left: 20px; }}
+            li {{ margin-bottom: 8px; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Чек #{order_id}</h2>
+            <p><b>Статус:</b> {status_badge}</p>
+            <p><b>Клієнт:</b> {order_data['name']}</p>
+            <p><b>Телефон:</b> {order_data['phone']}</p>
+            <p><b>Час:</b> {order_data['time']}</p>
+            <hr>
+            <p><b>Товари:</b></p>
+            <ul>{items_html}</ul>
+            <p style='font-size: 18px; font-weight: bold; color: #007aff;'>Сума: {order_data['total']} грн</p>
+            {button_html}
+        </div>
+    </body>
+    </html>
+    """
+    return html
 
 
 # === ЗАПУСК И ОБРАБОТКА ПОТОКОВ ===
@@ -396,7 +469,6 @@ def start_bot_polling():
             time.sleep(3)
 
 
-# Запускаем фоновые задачи до вызова Flask
 threading.Thread(target=start_bot_polling, daemon=True).start()
 threading.Thread(target=check_stock_subscriptions, daemon=True).start()
 
