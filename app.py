@@ -343,8 +343,11 @@ def order():
             items = data.get("items", [])
             name = data.get("name")
             phone = data.get("phone")
-            client_chat_id = data.get("chat_id")  # Чат покупателя
+            client_chat_id = data.get("chat_id")
             order_id = data.get("order_id", f"ORD-{int(time.time())}")
+
+            print(f"--- НОВЫЙ ЗАКАЗ {order_id} ---", file=sys.stderr)
+            print(f"Client Name: {name}, Phone: {phone}, Chat ID: {client_chat_id}", file=sys.stderr)
 
             total_sum = 0
             for i in items:
@@ -368,14 +371,15 @@ def order():
             }
             save_json(ORDERS_FILE, orders)
 
+            items_str = "\n".join(
+                [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
+            )
+
             # 1. Отправляем уведомление администратору
             title_hdr = (
                 "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>"
                 if req_type == "booking"
                 else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
-            )
-            items_str = "\n".join(
-                [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
             )
 
             admin_msg = (
@@ -383,7 +387,7 @@ def order():
                 f"🧾 <b>Чек:</b> #{order_id}\n\n"
                 f"👤 <b>Клієнт:</b> {name}\n"
                 f"📞 <b>Телефон:</b> {phone}\n"
-                f"💬 <b>Chat ID:</b> {client_chat_id or 'Невідомо'}\n\n"
+                f"💬 <b>Chat ID клієнта:</b> {client_chat_id or 'НЕ ПЕРЕДАН'}\n\n"
                 f"📦 <b>Товари:</b>\n{items_str}\n\n"
                 f"💰 <b>Разом:</b> {total_sum} грн"
             )
@@ -411,11 +415,14 @@ def order():
                         qr_bytes = io.BytesIO(qr_resp.content)
                         qr_bytes.name = f"{order_id}.png"
                         bot.send_photo(client_chat_id, photo=qr_bytes, caption=client_msg, parse_mode="HTML")
+                        print(f"Успешно отправлено фото на Chat ID: {client_chat_id}", file=sys.stderr)
                     else:
                         send_telegram_msg(client_chat_id, client_msg)
                 except Exception as e:
-                    print(f"Error sending photo to client: {e}", file=sys.stderr)
+                    print(f"ОШИБКА ОТПРАВКИ КЛИЕНТУ ({client_chat_id}): {e}", file=sys.stderr)
                     send_telegram_msg(client_chat_id, client_msg)
+            else:
+                print("Chat ID клиента пустой! Сообщение не отправлено.", file=sys.stderr)
 
             return jsonify({"status": "ok", "order_id": order_id})
 
