@@ -243,37 +243,13 @@
         .badge-new { background: rgba(52, 199, 89, 0.85); border: 1px solid rgba(255,255,255,0.2); }
         .badge-sale { background: rgba(255, 149, 0, 0.85); border: 1px solid rgba(255,255,255,0.2); }
 
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .popularity-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            width: fit-content;
-            backdrop-filter: blur(6px);
-        }
+        .popularity-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; margin-bottom: 8px; width: fit-content; backdrop-filter: blur(6px); }
         .tag-views { background: rgba(255, 149, 0, 0.12); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.25); }
         .tag-sales { background: rgba(255, 59, 48, 0.12); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.25); }
 
-        .stock-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            padding: 5px 10px;
-            border-radius: 10px;
-            backdrop-filter: blur(6px);
-        }
+        .stock-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; margin-bottom: 10px; padding: 5px 10px; border-radius: 10px; backdrop-filter: blur(6px); }
         .status-in-stock { color: #34c759; background-color: rgba(52, 199, 89, 0.12); border: 1px solid rgba(52, 199, 89, 0.2); }
         .status-out-stock { color: #ff3b30; background-color: rgba(255, 59, 48, 0.12); border: 1px solid rgba(255, 59, 48, 0.2); }
         .status-order { color: #ff9500; background-color: rgba(255, 149, 0, 0.12); border: 1px solid rgba(255, 149, 0, 0.2); }
@@ -282,17 +258,7 @@
         .dot-red { background: var(--red); box-shadow: 0 0 8px var(--red); }
         .dot-orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
 
-        .product-img {
-            width: 100%;
-            height: 190px;
-            object-fit: contain;
-            margin: 8px 0 14px 0;
-            background: transparent;
-            box-sizing: border-box;
-            border: none;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.12));
-            transition: transform 0.3s ease, opacity 0.2s ease;
-        }
+        .product-img { width: 100%; height: 190px; object-fit: contain; margin: 8px 0 14px 0; background: transparent; box-sizing: border-box; border: none; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.12)); transition: transform 0.3s ease, opacity 0.2s ease; }
         .product-card:hover .product-img { transform: scale(1.03); }
 
         .color-swatches-title { font-size: 11px; opacity: 0.5; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; margin-bottom: 6px; }
@@ -1060,7 +1026,6 @@
                 })
             }).then(() => { 
                 triggerHaptic('success');
-                // АВТОМАТИЧЕСКАЯ ОЧИСТКА КОРЗИНЫ ПОСЛЕ УСПЕШНОЙ БРОНИ
                 localStorage.removeItem('cart');
                 cart = [];
                 showReceipt(orderNum, name, phoneInput, isBooking);
