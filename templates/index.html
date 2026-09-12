@@ -866,6 +866,18 @@
             openCartModal(); 
         });
 
+        // Функция для динамического получения chat_id пользователя из контекста Telegram WebApp
+        function getTelegramChatId() {
+            try {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+                    if (window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.id) {
+                        return window.Telegram.WebApp.initDataUnsafe.user.id;
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+
         // ЛОГИКА СЛАЙДЕРА
         let currentSlide = 0;
         const slidesCount = 3;
@@ -1177,10 +1189,7 @@
 
         function subscribeNotify(productTitle) {
             triggerHaptic('medium');
-            let userChatId = null;
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-                userChatId = window.Telegram.WebApp.initDataUnsafe.user.id;
-            }
+            let userChatId = getTelegramChatId();
 
             if (userChatId) {
                 fetch('/order', {
@@ -1209,7 +1218,7 @@
             let name = document.getElementById('notifyClientName').value.trim();
             let phoneInput = document.getElementById('notifyClientPhone').value.trim();
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
-            let userChatId = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user.id : null;
+            let userChatId = getTelegramChatId();
 
             if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
             if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
@@ -1230,8 +1239,8 @@
             let isBooking = document.getElementById('bookingCheckbox').checked;
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
             
-            // Получаем chat_id пользователя из Telegram WebApp
-            let userChatId = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) ? window.Telegram.WebApp.initDataUnsafe.user.id : null;
+            // Получение chat_id покупателя
+            let userChatId = getTelegramChatId();
 
             if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
             if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
