@@ -118,11 +118,105 @@ def send_telegram_msg(chat_id, text, reply_markup=None):
         print(f"Error sending TG msg: {e}", file=sys.stderr)
 
 
-# === ФОНОВЫЙ МОНИТОРИНГ ИСТЕТАЮЩИХ БРОНЕЙ (ОПОВЕЩЕНИЕ ЗА 6-8 ЧАСОВ) ===
-def check_booking_reminders():
+# === ФОНОВЫЙ МОНИТОРИНГ ОПОВЕЩЕНИЙ ОБ ОТЗЫВАХ ПОСЛЕ ПОКУПКИ ===
+def check_feedback_requests():
     while True:
         try:
             time.sleep(600)  # Проверка каждые 10 минут
+            orders = load_json(ORDERS_FILE)
+            if not orders:
+                continue
+
+            now = datetime.now()
+            updated = False
+
+            for order_id, order_data in orders.items():
+                if order_data.get("status") == "completed" and not order_data.get("feedback_sent"):
+                    completed_time_str = order_data.get("completed_time")
+                    if not completed_time_str:
+                        continue
+
+                    try:
+                        completed_time = datetime.strptime(completed_time_str, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        continue
+
+                    # Отправляем отзыв через 24 часа после выдачи товара (для теста можно уменьшить до 0.05 = 3 минуты)
+                    elapsed_hours = (now - completed_time).total_seconds() / 3600.0
+
+                    if elapsed_hours >= 24.0:
+                        client_chat_id = order_data.get("chat_id")
+                        if client_chat_id:
+                            kb = types.InlineKeyboardMarkup()
+                            kb.add(
+                                types.InlineKeyboardButton(text="⭐️ 5 — Все чудово!", callback_data=f"fb_5_{order_id}"),
+                                types.InlineKeyboardButton(text="💬 Є зауваження", callback_data=f"fb_bad_{order_id}")
+                            )
+
+                            msg = (
+                                f"Вітаємо! 😊 Дякуємо, що завітали до нашого магазину в Чугуєві!\n\n"
+                                f"Сподіваємося, ви задоволені покупкою. Будь ласка, оцініть якість нашого обслуговування:"
+                            )
+                            send_telegram_msg(client_chat_id, msg, reply_markup=kb.to_dict())
+
+                        order_data["feedback_sent"] = True
+                        updated = True
+
+            if updated:
+                save_json(ORDERS_FILE, orders)
+
+        except Exception as e:
+            print(f"Error in feedback checker: {e}", file=sys.stderr)
+
+
+# === ОБРАБОТКА НАЖАТИЙ НА КНОПКИ ОТЗЫВА ===
+@bot.callback_query_handler(func=lambda call: call.data.startswith("fb_"))
+def handle_feedback_callback(call):
+    try:
+        parts = call.data.split("_")
+        fb_type = parts[1]
+        order_id = parts[2] if len(parts) > 2 else "---"
+
+        if fb_type == "5":
+            bot.answer_callback_query(call.id, "Дякуємо за оцінку!")
+            kb = types.InlineKeyboardMarkup()
+            kb.add(types.InlineKeyboardButton(text="📍 Залишити відгук у Google", url="https://maps.google.com/?q=Chuhuiv+Tsentralnyi+Blvd+8"))
+
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text="🎉 <b>Дякуємо за вашу високу оцінку!</b>\n\nБудемо дуже вдячні, якщо поділитеся враженнями про нас у Google Картах! 💙💛",
+                parse_mode="HTML",
+                reply_markup=kb
+            )
+
+            # Оповещаем админа
+            send_telegram_msg(ADMIN_CHAT_ID, f"⭐️ <b>ПОЗИТИВНИЙ ВІДГУК!</b>\nКлієнт поставив 5 зірок за замовлення #{order_id}!")
+
+        elif fb_type == "bad":
+            bot.answer_callback_query(call.id, "Зафіксовано")
+            kb = types.InlineKeyboardMarkup()
+            kb.add(types.InlineKeyboardButton(text="💬 Написати менеджеру", url="https://t.me/smthwrng121"))
+
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text="Нам дуже прикро, що ви зіштовхнулися з незручностями. 😔\n\nБудь ласка, напишіть нашому керуючому, і ми вирішимо ваше питання в найкоротший термін!",
+                parse_mode="HTML",
+                reply_markup=kb
+            )
+
+            send_telegram_msg(ADMIN_CHAT_ID, f"⚠️ <b>Є ЗАУВАЖЕННЯ ДО ПОКУПКИ!</b>\nКлієнт залишив зауваження по чеку #{order_id}. Зв'яжіться з ним або очікуйте на повідомлення.")
+
+    except Exception as e:
+        print(f"Error handling feedback callback: {e}", file=sys.stderr)
+
+
+# === ФОНОВЫЙ МОНИТОРИНГ ИСТЕКАЮЩИХ БРОНЕЙ ===
+def check_booking_reminders():
+    while True:
+        try:
+            time.sleep(600)
             orders = load_json(ORDERS_FILE)
             if not orders:
                 continue
@@ -146,7 +240,6 @@ def check_booking_reminders():
 
                     elapsed_hours = (now - created_time).total_seconds() / 3600.0
 
-                    # Напоминаем, когда прошло от 16 до 18 часов (осталось 6-8 часов)
                     if 16.0 <= elapsed_hours <= 18.0:
                         client_chat_id = order_data.get("chat_id")
                         if client_chat_id:
@@ -154,8 +247,7 @@ def check_booking_reminders():
                                 f"⏳ <b>Нагадування про бронювання!</b>\n\n"
                                 f"🧾 <b>Чек:</b> #{order_id}\n"
                                 f"📍 <b>Адреса магазину:</b> м. Чугуїв, бул. Центральний, 8\n\n"
-                                f"⏱️ До закінчення броні залишилося близько <b>6-8 годин</b>. "
-                                f"Чекаємо на вас у магазині!"
+                                f"⏱️ До закінчення броні залишилося близько <b>6-8 годин</b>. Чекаємо на вас у магазині!"
                             )
                             send_telegram_msg(client_chat_id, reminder_msg)
 
@@ -263,7 +355,7 @@ def faq_cmd(message):
     text = (
         "❓ <b>Часті запитання:</b>\n\n"
         "1️⃣ <b>Чи є гарантія на техніку?</b>\n"
-        "— Так! На нову техніку діє гарантія 12 місяців, на б/в — 2 тижнi.\n\n"
+        "— Так! На нову техніку діє гарантія 12 місяців, на б/в — від 3 місяців.\n\n"
         "2️⃣ <b>Як працює бронювання?</b>\n"
         "— Ви обираєте товар у веб-каталозі, тиснете «Забронювати», і ми відкладаємо його для вас на 24 години.\n\n"
         "3️⃣ <b>Чи допомагаєте з налаштуванням та переносом даних?</b>\n"
@@ -383,6 +475,7 @@ def order():
                 "type": req_type,
                 "chat_id": client_chat_id,
                 "reminder_sent": False,
+                "feedback_sent": False,
                 "time": time.strftime("%Y-%m-%d %H:%M:%S")
             }
             save_json(ORDERS_FILE, orders)
@@ -416,7 +509,6 @@ def order():
                     f"👇 <i>Покажіть цей QR-код продавцю на касі:</i>"
                 )
 
-                # Кнопки быстрых действий для клиента
                 action_kb = types.InlineKeyboardMarkup()
                 action_kb.add(
                     types.InlineKeyboardButton(text="📞 Зателефонувати", url="tel:+380973916400"),
@@ -456,13 +548,13 @@ def admin_check():
 
     if action == "complete" and order_data["status"] == "active":
         order_data["status"] = "completed"
+        order_data["completed_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
         save_json(ORDERS_FILE, orders)
         send_telegram_msg(
             ADMIN_CHAT_ID,
             f"✅ <b>ТОВАР ВИДАНО!</b>\n🧾 Чек: #{order_id}\n👤 Клієнт: {order_data['name']}\n💰 Сума: {order_data['total']} грн"
         )
 
-    # Проверка на просрочку (более 24 часов)
     is_expired = False
     created_str = order_data.get("time")
     if created_str:
@@ -545,6 +637,7 @@ def start_bot_polling():
 threading.Thread(target=start_bot_polling, daemon=True).start()
 threading.Thread(target=check_stock_subscriptions, daemon=True).start()
 threading.Thread(target=check_booking_reminders, daemon=True).start()
+threading.Thread(target=check_feedback_requests, daemon=True).start()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
