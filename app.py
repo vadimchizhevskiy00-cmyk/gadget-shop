@@ -178,11 +178,15 @@ def check_stock_subscriptions():
 @bot.message_handler(commands=["start", "help"])
 def start_cmd(message):
     try:
+        # Создаем Inline-клавиатуру (прикреплена к сообщению)
+        inline_kb = types.InlineKeyboardMarkup()
         web_app = types.WebAppInfo(url=WEB_APP_URL)
-        reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        reply_kb.add(
-            types.KeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
+        inline_kb.add(
+            types.InlineKeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
         )
+
+        # Обычные кнопки снизу для контактов и FAQ
+        reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📍 Магазин та контакти"),
             types.KeyboardButton(text="❓ Часті запитання (FAQ)"),
@@ -191,9 +195,10 @@ def start_cmd(message):
         welcome_text = (
             f"Вітаємо, {message.from_user.first_name}! 👋\n\n"
             f"Ласкаво просимо до нашого магазину гаджетів та аксесуарів.\n\n"
-            f"Обирайте потрібний розділ у меню нижче! 👇"
+            f"Натисніть кнопку нижче, щоб відкрити каталог! 👇"
         )
-        bot.send_message(message.chat.id, welcome_text, reply_markup=reply_kb)
+        bot.send_message(message.chat.id, welcome_text, reply_markup=inline_kb)
+        bot.send_message(message.chat.id, "Також ви можете переглянути нашу адресу та FAQ:", reply_markup=reply_kb)
     except Exception as e:
         print(f"Помилка /start: {e}", file=sys.stderr)
 
