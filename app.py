@@ -7,14 +7,14 @@ import sys
 import threading
 import time
 import traceback
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, render_template, request
 import requests
 import telebot
 from telebot import types
 
-# === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8762340517:AAEcvIHkqCdLduHJj-4cyVEgN2ohQN3VeuY")
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "396778432")
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "6504772157")
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://gadget-shop-v5kh.onrender.com")
 CSV_URL = os.environ.get("CSV_URL", "https://docs.google.com/spreadsheets/d/e/2PACX-1vReZP-fGq9BOYihV2X2DZoUuX79f0mTMaFPVJwKxyOt-P7uUGyTGf-48NKBTRFtPj2j7UpLnbR5d3VY/pub?output=csv")
 
@@ -25,7 +25,6 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
 
-# === ХРАНИЛИЩЕ ПОДПИСОК И ЗАКАЗОВ ===
 def load_json(filepath):
     if not os.path.exists(filepath):
         return [] if filepath == SUBS_FILE else {}
@@ -56,7 +55,6 @@ def parse_memory_and_prices(memory_raw, price_raw):
     p_str = clean_val(price_raw)
     m_del = "/" if "/" in m_str else ","
     p_del = "/" if "/" in p_str else ","
-    
     m_list = [x.strip() for x in m_str.split(m_del) if x.strip()] if m_str else []
     p_list = [x.strip() for x in p_str.split(p_del) if x.strip()] if p_str else []
     return m_list, p_list
@@ -80,7 +78,6 @@ def get_products():
         products = []
         for row in reader:
             clean_row = {clean_val(k): clean_val(v) for k, v in row.items()}
-            
             m_list, p_list = parse_memory_and_prices(
                 clean_row.get("Память", "") or clean_row.get("Пам'ять", ""),
                 clean_row.get("Цена", "") or clean_row.get("Ціна", "")
@@ -102,22 +99,74 @@ def get_products():
             clean_row["Батарея"] = clean_val(clean_row.get("Батарея", "-"))
 
             products.append(clean_row)
-
         return products
     except Exception as e:
         print(f"Error fetching CSV: {e}", file=sys.stderr)
         return []
 
 
-def send_telegram_msg(chat_id, text):
+def send_telegram_msg(chat_id, text, reply_markup=None):
     if not TELEGRAM_BOT_TOKEN or not chat_id:
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     try:
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
         print(f"Error sending TG msg: {e}", file=sys.stderr)
+
+
+# === ФОНОВЫЙ МОНИТОРИНГ ИСТЕТАЮЩИХ БРОНЕЙ (ОПОВЕЩЕНИЕ ЗА 6-8 ЧАСОВ) ===
+def check_booking_reminders():
+    while True:
+        try:
+            time.sleep(600)  # Проверка каждые 10 минут
+            orders = load_json(ORDERS_FILE)
+            if not orders:
+                continue
+
+            now = datetime.now()
+            updated = False
+
+            for order_id, order_data in orders.items():
+                if order_data.get("status") == "active" and order_data.get("type") == "booking":
+                    if order_data.get("reminder_sent"):
+                        continue
+
+                    created_time_str = order_data.get("time")
+                    if not created_time_str:
+                        continue
+
+                    try:
+                        created_time = datetime.strptime(created_time_str, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        continue
+
+                    elapsed_hours = (now - created_time).total_seconds() / 3600.0
+
+                    # Напоминаем, когда прошло от 16 до 18 часов (осталось 6-8 часов)
+                    if 16.0 <= elapsed_hours <= 18.0:
+                        client_chat_id = order_data.get("chat_id")
+                        if client_chat_id:
+                            reminder_msg = (
+                                f"⏳ <b>Нагадування про бронювання!</b>\n\n"
+                                f"🧾 <b>Чек:</b> #{order_id}\n"
+                                f"📍 <b>Адреса магазину:</b> м. Чугуїв, бул. Центральний, 8\n\n"
+                                f"⏱️ До закінчення броні залишилося близько <b>6-8 годин</b>. "
+                                f"Чекаємо на вас у магазині!"
+                            )
+                            send_telegram_msg(client_chat_id, reminder_msg)
+
+                        order_data["reminder_sent"] = True
+                        updated = True
+
+            if updated:
+                save_json(ORDERS_FILE, orders)
+
+        except Exception as e:
+            print(f"Error in booking reminder loop: {e}", file=sys.stderr)
 
 
 # === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
@@ -148,9 +197,7 @@ def check_stock_subscriptions():
                     status = clean_val(p.get("Статус", "")).strip().lower()
 
                     if prod_title in p_name or p_name in prod_title:
-                        is_out = any(
-                            kw in status for kw in ["нет", "немає", "закончил"]
-                        )
+                        is_out = any(kw in status for kw in ["нет", "немає", "закончил"])
                         if not is_out:
                             found_and_in_stock = True
                             matched_title = p.get("Название", "")
@@ -178,14 +225,10 @@ def check_stock_subscriptions():
 @bot.message_handler(commands=["start", "help"])
 def start_cmd(message):
     try:
-        # Создаем Inline-клавиатуру (прикреплена к сообщению)
         inline_kb = types.InlineKeyboardMarkup()
         web_app = types.WebAppInfo(url=WEB_APP_URL)
-        inline_kb.add(
-            types.InlineKeyboardButton(text="📱 Відкрити каталог", web_app=web_app)
-        )
+        inline_kb.add(types.InlineKeyboardButton(text="📱 Відкрити каталог", web_app=web_app))
 
-        # Обычные кнопки снизу для контактов и FAQ
         reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
         reply_kb.add(
             types.KeyboardButton(text="📍 Магазин та контакти"),
@@ -203,9 +246,7 @@ def start_cmd(message):
         print(f"Помилка /start: {e}", file=sys.stderr)
 
 
-@bot.message_handler(
-    func=lambda msg: msg.text and "Магазин та контакти" in msg.text
-)
+@bot.message_handler(func=lambda msg: msg.text and "Магазин та контакти" in msg.text)
 def contacts_cmd(message):
     text = (
         "📍 <b>Наш магазин чекає на вас!</b>\n\n"
@@ -217,9 +258,7 @@ def contacts_cmd(message):
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
 
-@bot.message_handler(
-    func=lambda msg: msg.text and "Часті запитання" in msg.text
-)
+@bot.message_handler(func=lambda msg: msg.text and "Часті запитання" in msg.text)
 def faq_cmd(message):
     text = (
         "❓ <b>Часті запитання:</b>\n\n"
@@ -257,17 +296,9 @@ def index():
 
             filtered_products.append(p)
 
-        return render_template(
-            "index.html",
-            products=filtered_products,
-            category=category,
-            search=search,
-        )
+        return render_template("index.html", products=filtered_products, category=category, search=search)
     except Exception as e:
-        print(
-            f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}",
-            file=sys.stderr,
-        )
+        print(f"CRITICAL ERROR IN INDEX ROUTE:\n{traceback.format_exc()}", file=sys.stderr)
         return f"<h3>Помилка завантаження:</h3><pre>{e}</pre>", 500
 
 
@@ -283,22 +314,16 @@ def api_accessories():
 
     for p in products:
         cat = clean_val(p.get("Категория", "")).lower()
-
         if cat in ["чехлы", "стекла", "пленки", "чохли", "скло", "плівки"]:
             compat = clean_val(p.get("Совместимость", "")).lower()
             title = clean_val(p.get("Название", "")).lower()
-
             item = {
                 "Название": p.get("Название", ""),
                 "Цена": p.get("price_list", [p.get("Цена", "0")])[0] if p.get("price_list") else p.get("Цена", "0"),
             }
-
             if model in compat or model in title:
                 exact_accessories.append(item)
-
-            elif cat in ["пленки", "плівки"] or (
-                "пленка" in title or "плівка" in title
-            ):
+            elif cat in ["пленки", "плівки"] or ("пленка" in title or "плівка" in title):
                 film_accessories.append(item)
 
     result = exact_accessories if exact_accessories else film_accessories
@@ -319,19 +344,8 @@ def order():
 
             if chat_id:
                 subs = load_json(SUBS_FILE)
-                if not any(
-                    s.get("chat_id") == chat_id
-                    and s.get("product_name") == product_name
-                    for s in subs
-                ):
-                    subs.append(
-                        {
-                            "chat_id": chat_id,
-                            "product_name": product_name,
-                            "name": name,
-                            "phone": phone,
-                        }
-                    )
+                if not any(s.get("chat_id") == chat_id and s.get("product_name") == product_name for s in subs):
+                    subs.append({"chat_id": chat_id, "product_name": product_name, "name": name, "phone": phone})
                     save_json(SUBS_FILE, subs)
 
             admin_msg = (
@@ -351,9 +365,6 @@ def order():
             client_chat_id = data.get("chat_id")
             order_id = data.get("order_id", f"ORD-{int(time.time())}")
 
-            print(f"--- НОВЫЙ ЗАКАЗ {order_id} ---", file=sys.stderr)
-            print(f"Client Name: {name}, Phone: {phone}, Chat ID: {client_chat_id}", file=sys.stderr)
-
             total_sum = 0
             for i in items:
                 p_str = str(i.get("price", "0"))
@@ -361,7 +372,6 @@ def order():
                 if digits:
                     total_sum += int(digits)
 
-            # Сохранение заказа для сканирования QR-кода
             orders = load_json(ORDERS_FILE)
             orders[order_id] = {
                 "order_id": order_id,
@@ -372,20 +382,13 @@ def order():
                 "status": "active",
                 "type": req_type,
                 "chat_id": client_chat_id,
+                "reminder_sent": False,
                 "time": time.strftime("%Y-%m-%d %H:%M:%S")
             }
             save_json(ORDERS_FILE, orders)
 
-            items_str = "\n".join(
-                [f"• {i.get('title')} — {i.get('price')} грн" for i in items]
-            )
-
-            # 1. Отправляем уведомление администратору
-            title_hdr = (
-                "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>"
-                if req_type == "booking"
-                else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
-            )
+            items_str = "\n".join([f"• {i.get('title')} — {i.get('price')} грн" for i in items])
+            title_hdr = "📌 <b>НОВЕ БРОНЮВАННЯ (на 24 год)!</b>" if req_type == "booking" else "🛒 <b>НОВЕ ЗАМОВЛЕННЯ!</b>"
 
             admin_msg = (
                 f"{title_hdr}\n"
@@ -398,7 +401,6 @@ def order():
             )
             send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
 
-            # 2. Отправляем чек с QR-кодом ПОКУПАТЕЛЮ в его личные сообщения
             if client_chat_id:
                 check_url = f"{WEB_APP_URL}/admin/check?order={order_id}"
                 qr_api_url = f"https://quickchart.io/qr?text={requests.utils.quote(check_url)}&size=300"
@@ -411,23 +413,27 @@ def order():
                     f"💰 <b>Разом до сплати:</b> {total_sum} грн\n"
                     f"📍 <b>Адреса:</b> м. Чугуїв, бул. Центральний, 8\n"
                     f"⏱️ <b>Бронь діє 24 години!</b>\n\n"
-                    f"👇 <i>Покажіть цей QR-код або номер чека продавцю на касі:</i>"
+                    f"👇 <i>Покажіть цей QR-код продавцю на касі:</i>"
                 )
-                
+
+                # Кнопки быстрых действий для клиента
+                action_kb = types.InlineKeyboardMarkup()
+                action_kb.add(
+                    types.InlineKeyboardButton(text="📞 Зателефонувати", url="tel:+380973916400"),
+                    types.InlineKeyboardButton(text="📍 Маршрут на карті", url="https://maps.google.com/?q=Chuhuiv+Tsentralnyi+Blvd+8")
+                )
+
                 try:
                     qr_resp = requests.get(qr_api_url, timeout=10)
                     if qr_resp.status_code == 200:
                         qr_bytes = io.BytesIO(qr_resp.content)
                         qr_bytes.name = f"{order_id}.png"
-                        bot.send_photo(client_chat_id, photo=qr_bytes, caption=client_msg, parse_mode="HTML")
-                        print(f"Успешно отправлено фото на Chat ID: {client_chat_id}", file=sys.stderr)
+                        bot.send_photo(client_chat_id, photo=qr_bytes, caption=client_msg, parse_mode="HTML", reply_markup=action_kb)
                     else:
-                        send_telegram_msg(client_chat_id, client_msg)
+                        send_telegram_msg(client_chat_id, client_msg, reply_markup=action_kb)
                 except Exception as e:
-                    print(f"ОШИБКА ОТПРАВКИ КЛИЕНТУ ({client_chat_id}): {e}", file=sys.stderr)
-                    send_telegram_msg(client_chat_id, client_msg)
-            else:
-                print("Chat ID клиента пустой! Сообщение не отправлено.", file=sys.stderr)
+                    print(f"Error sending photo to client: {e}", file=sys.stderr)
+                    send_telegram_msg(client_chat_id, client_msg, reply_markup=action_kb)
 
             return jsonify({"status": "ok", "order_id": order_id})
 
@@ -451,18 +457,45 @@ def admin_check():
     if action == "complete" and order_data["status"] == "active":
         order_data["status"] = "completed"
         save_json(ORDERS_FILE, orders)
-        
         send_telegram_msg(
-            ADMIN_CHAT_ID, 
+            ADMIN_CHAT_ID,
             f"✅ <b>ТОВАР ВИДАНО!</b>\n🧾 Чек: #{order_id}\n👤 Клієнт: {order_data['name']}\n💰 Сума: {order_data['total']} грн"
         )
 
+    # Проверка на просрочку (более 24 часов)
+    is_expired = False
+    created_str = order_data.get("time")
+    if created_str:
+        try:
+            created_dt = datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S")
+            if (datetime.now() - created_dt).total_seconds() > 86400:
+                is_expired = True
+        except ValueError:
+            pass
+
     items_html = "".join([f"<li><b>{i.get('title')}</b> — {i.get('price')} грн</li>" for i in order_data["items"]])
-    status_badge = "<span style='color:green; font-weight:bold;'>🟢 АКТИВНЕ БРОНЮВАННЯ</span>" if order_data["status"] == "active" else "<span style='color:gray; font-weight:bold;'>⚪ ВИДАНО / ПОГАШЕНО</span>"
+
+    if order_data["status"] == "completed":
+        status_badge = "<span style='color:gray; font-weight:bold;'>⚪ ВИДАНО / ПОГАШЕНО</span>"
+    elif is_expired:
+        status_badge = "<span style='color:#ff9500; font-weight:bold;'>⚠️ ПРОСРОЧЕНО (понад 24 год)</span>"
+    else:
+        status_badge = "<span style='color:green; font-weight:bold;'>🟢 АКТИВНЕ БРОНЮВАННЯ</span>"
 
     button_html = ""
     if order_data["status"] == "active":
-        button_html = f"<a href='/admin/check?order={order_id}&action=complete' style='display:block; width:100%; text-align:center; background:#34c759; color:white; padding:16px 0; border-radius:12px; font-weight:bold; text-decoration:none; margin-top:20px; font-size:18px;'>✅ ВИДАТИ ТОВАР</a>"
+        button_html = f"""
+        <button onclick="confirmIssue()" style="display:block; width:100%; text-align:center; background:#34c759; color:white; padding:16px 0; border:none; border-radius:14px; font-weight:bold; font-size:18px; cursor:pointer; margin-top:20px;">
+            ✅ ВИДАТИ ТОВАР
+        </button>
+        <script>
+            function confirmIssue() {{
+                if (confirm("Підтверджуєте видачу замовлення #{order_id} на суму {order_data['total']} грн?")) {{
+                    window.location.href = "/admin/check?order={order_id}&action=complete";
+                }}
+            }}
+        </script>
+        """
 
     html = f"""
     <!DOCTYPE html>
@@ -472,7 +505,7 @@ def admin_check():
         <title>Перевірка замовлення #{order_id}</title>
         <style>
             body {{ font-family: -apple-system, sans-serif; background: #f2f2f7; padding: 20px; margin:0; }}
-            .card {{ background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; }}
+            .card {{ background: white; padding: 22px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; }}
             h2 {{ margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px; }}
             ul {{ padding-left: 20px; }}
             li {{ margin-bottom: 8px; }}
@@ -484,7 +517,7 @@ def admin_check():
             <p><b>Статус:</b> {status_badge}</p>
             <p><b>Клієнт:</b> {order_data['name']}</p>
             <p><b>Телефон:</b> {order_data['phone']}</p>
-            <p><b>Час:</b> {order_data['time']}</p>
+            <p><b>Час створення:</b> {order_data['time']}</p>
             <hr>
             <p><b>Товари:</b></p>
             <ul>{items_html}</ul>
@@ -497,15 +530,13 @@ def admin_check():
     return html
 
 
-# === ЗАПУСК И ОБРАБОТКА ПОТОКОВ ===
+# === ЗАПУСК ПОТОКОВ ===
 def start_bot_polling():
     while True:
         try:
             bot.remove_webhook()
             print("Запуск polling бота...", file=sys.stderr)
-            bot.infinity_polling(
-                timeout=20, long_polling_timeout=10, skip_pending=True
-            )
+            bot.infinity_polling(timeout=20, long_polling_timeout=10, skip_pending=True)
         except Exception as e:
             print(f"Ошибка polling: {e}. Перезапуск...", file=sys.stderr)
             time.sleep(3)
@@ -513,6 +544,7 @@ def start_bot_polling():
 
 threading.Thread(target=start_bot_polling, daemon=True).start()
 threading.Thread(target=check_stock_subscriptions, daemon=True).start()
+threading.Thread(target=check_booking_reminders, daemon=True).start()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
