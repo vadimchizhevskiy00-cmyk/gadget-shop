@@ -1239,7 +1239,7 @@
             let isBooking = document.getElementById('bookingCheckbox').checked;
             let digitsOnly = phoneInput.replace('+380', '').replace(/\D/g, '');
             
-            // Получение chat_id покупателя
+            // Динамическое получение chat_id пользователя
             let userChatId = getTelegramChatId();
 
             if (!name) { alert("Будь ласка, введіть ваше ім'я!"); return; }
