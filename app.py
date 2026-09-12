@@ -343,7 +343,7 @@ def order():
             items = data.get("items", [])
             name = data.get("name")
             phone = data.get("phone")
-            chat_id = data.get("chat_id")
+            client_chat_id = data.get("chat_id")  # Чат покупателя
             order_id = data.get("order_id", f"ORD-{int(time.time())}")
 
             total_sum = 0
@@ -363,6 +363,7 @@ def order():
                 "total": total_sum,
                 "status": "active",
                 "type": req_type,
+                "chat_id": client_chat_id,
                 "time": time.strftime("%Y-%m-%d %H:%M:%S")
             }
             save_json(ORDERS_FILE, orders)
@@ -381,16 +382,17 @@ def order():
                 f"{title_hdr}\n"
                 f"🧾 <b>Чек:</b> #{order_id}\n\n"
                 f"👤 <b>Клієнт:</b> {name}\n"
-                f"📞 <b>Телефон:</b> {phone}\n\n"
+                f"📞 <b>Телефон:</b> {phone}\n"
+                f"💬 <b>Chat ID:</b> {client_chat_id or 'Невідомо'}\n\n"
                 f"📦 <b>Товари:</b>\n{items_str}\n\n"
                 f"💰 <b>Разом:</b> {total_sum} грн"
             )
             send_telegram_msg(ADMIN_CHAT_ID, admin_msg)
 
-            # 2. Отправляем чек с QR-кодом клиенту в ЛС
-            if chat_id:
+            # 2. Отправляем чек с QR-кодом ПОКУПАТЕЛЮ в его личные сообщения
+            if client_chat_id:
                 check_url = f"{WEB_APP_URL}/admin/check?order={order_id}"
-                qr_img_url = f"https://quickchart.io/qr?text={requests.utils.quote(check_url)}&size=300"
+                qr_api_url = f"https://quickchart.io/qr?text={requests.utils.quote(check_url)}&size=300"
 
                 client_msg = (
                     f"✅ <b>Ваше бронювання успішно оформлено!</b>\n\n"
@@ -404,9 +406,16 @@ def order():
                 )
                 
                 try:
-                    bot.send_photo(chat_id, photo=qr_img_url, caption=client_msg, parse_mode="HTML")
+                    qr_resp = requests.get(qr_api_url, timeout=10)
+                    if qr_resp.status_code == 200:
+                        qr_bytes = io.BytesIO(qr_resp.content)
+                        qr_bytes.name = f"{order_id}.png"
+                        bot.send_photo(client_chat_id, photo=qr_bytes, caption=client_msg, parse_mode="HTML")
+                    else:
+                        send_telegram_msg(client_chat_id, client_msg)
                 except Exception as e:
                     print(f"Error sending photo to client: {e}", file=sys.stderr)
+                    send_telegram_msg(client_chat_id, client_msg)
 
             return jsonify({"status": "ok", "order_id": order_id})
 
