@@ -63,9 +63,20 @@ def parse_memory_and_prices(memory_raw, price_raw):
 def parse_colors_and_photos(color_raw, photo_raw):
     c_str = clean_val(color_raw)
     p_str = clean_val(photo_raw)
-    c_list = [x.strip() for x in c_str.split(",") if x.strip()] if c_str else []
+    raw_colors = [x.strip() for x in c_str.split(",") if x.strip()] if c_str else []
     p_list = [x.strip() for x in p_str.split(",") if x.strip()] if p_str else []
-    return c_list, p_list
+    
+    parsed_colors = []
+    for rc in raw_colors:
+        rc_lower = rc.lower()
+        is_available = not any(kw in rc_lower for kw in ["нет", "немає", "нема", "-", "out"])
+        clean_name = re.sub(r"\s*\([^)]*\)", "", rc).strip()
+        parsed_colors.append({
+            "raw": rc,
+            "name": clean_name,
+            "available": is_available
+        })
+    return parsed_colors, p_list
 
 
 def get_products():
@@ -122,7 +133,7 @@ def send_telegram_msg(chat_id, text, reply_markup=None):
 def check_feedback_requests():
     while True:
         try:
-            time.sleep(600)  # Проверка каждые 10 минут
+            time.sleep(600)
             orders = load_json(ORDERS_FILE)
             if not orders:
                 continue
@@ -141,7 +152,6 @@ def check_feedback_requests():
                     except ValueError:
                         continue
 
-                    # Отправляем отзыв через 24 часа после выдачи товара (для теста можно уменьшить до 0.05 = 3 минуты)
                     elapsed_hours = (now - completed_time).total_seconds() / 3600.0
 
                     if elapsed_hours >= 24.0:
@@ -169,7 +179,6 @@ def check_feedback_requests():
             print(f"Error in feedback checker: {e}", file=sys.stderr)
 
 
-# === ОБРАБОТКА НАЖАТИЙ НА КНОПКИ ОТЗЫВА ===
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fb_"))
 def handle_feedback_callback(call):
     try:
@@ -190,7 +199,6 @@ def handle_feedback_callback(call):
                 reply_markup=kb
             )
 
-            # Оповещаем админа
             send_telegram_msg(ADMIN_CHAT_ID, f"⭐️ <b>ПОЗИТИВНИЙ ВІДГУК!</b>\nКлієнт поставив 5 зірок за замовлення #{order_id}!")
 
         elif fb_type == "bad":
@@ -212,7 +220,6 @@ def handle_feedback_callback(call):
         print(f"Error handling feedback callback: {e}", file=sys.stderr)
 
 
-# === ФОНОВЫЙ МОНИТОРИНГ ИСТЕКАЮЩИХ БРОНЕЙ ===
 def check_booking_reminders():
     while True:
         try:
@@ -261,7 +268,6 @@ def check_booking_reminders():
             print(f"Error in booking reminder loop: {e}", file=sys.stderr)
 
 
-# === ФОНОВЫЙ МОНИТОРИНГ НАЛИЧИЯ (15 СЕКУНД) ===
 def check_stock_subscriptions():
     while True:
         try:
@@ -313,7 +319,6 @@ def check_stock_subscriptions():
             print(f"Error in stock checker: {e}", file=sys.stderr)
 
 
-# === ТЕЛЕГРАМ БОТ (ОБРАБОТКА КОМАНД) ===
 @bot.message_handler(commands=["start", "help"])
 def start_cmd(message):
     try:
@@ -364,7 +369,6 @@ def faq_cmd(message):
     bot.send_message(message.chat.id, text, parse_mode="HTML")
 
 
-# === FLASK РУТЫ ===
 @app.route("/")
 def index():
     try:
@@ -442,7 +446,7 @@ def order():
 
             admin_msg = (
                 f"🔔 <b>НОВА ЗАЯВКА НА ПОВІДОМЛЕННЯ!</b>\n\n"
-                f"📦 <b>Товар:</b> {product_name}\n"
+                f"📦 <b>Товар/Колір:</b> {product_name}\n"
                 f"👤 <b>Клієнт:</b> {name}\n"
                 f"📞 <b>Телефон:</b> {phone}\n"
                 f"💬 <b>Chat ID:</b> {chat_id or 'Немає'}"
@@ -534,7 +538,6 @@ def order():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# === ПРОВЕРКА И ПОГАШЕНИЕ QR-КОДА (ДЛЯ ПРОДАВЦА) ===
 @app.route("/admin/check")
 def admin_check():
     order_id = request.args.get("order", "").strip()
@@ -622,7 +625,6 @@ def admin_check():
     return html
 
 
-# === ЗАПУСК ПОТОКОВ ===
 def start_bot_polling():
     while True:
         try:
