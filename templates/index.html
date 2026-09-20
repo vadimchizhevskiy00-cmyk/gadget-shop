@@ -124,14 +124,12 @@
 
         .product-img { width: 100%; height: 190px; object-fit: contain; margin: 8px 0 14px 0; background: transparent; box-sizing: border-box; border: none; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.12)); transition: transform 0.3s ease, opacity 0.2s ease; }
 
-        /* СТИЛИ ДЛЯ ЦВЕТОВ И НЕДОСТУПНЫХ ЦВЕТОВ */
         .color-swatches-title { font-size: 11px; opacity: 0.5; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; margin-bottom: 6px; }
         .color-swatches-container { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
         .color-swatch { position: relative; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--glass-border); box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; }
         .color-swatch:active { transform: scale(0.85); }
         .color-swatch.active { box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent); transform: scale(1.1); }
         
-        /* ПРИГЛУШЕНИЕ НЕДОСТУПНОГО ЦВЕТА */
         .color-swatch.disabled { opacity: 0.35; filter: grayscale(40%); }
         .color-swatch.disabled::after { content: ''; position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: #ff3b30; transform: rotate(-45deg); border-radius: 2px; }
 
@@ -481,8 +479,15 @@
     </div>
 
     <script>
+        // Инициализация Telegram Web App и раскрытие на полный экран
         let tg = window.Telegram.WebApp;
-        tg.expand();
+        try {
+            tg.ready();
+            tg.expand();
+        } catch(e) {
+            console.error("Telegram WebApp error:", e);
+        }
+
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let selectedPhoneState = {};
         let currentNotifyProduct = "";
@@ -518,48 +523,40 @@
         }
         setInterval(nextSlide, 4000);
 
+        // Расширенная палитра цветов
         const colorPalette = {
-            // Черные и темные оттенки
             'черный': '#1c1c1e', 'чорний': '#1c1c1e', 'black': '#1c1c1e',
             'графит': '#383838', 'графіт': '#383838', 'graphite': '#383838',
             'полночный': '#192535', 'midnight': '#192535',
 
-            // Белые и светлые
             'белый': '#ffffff', 'білий': '#ffffff', 'white': '#ffffff',
             'серебристый': '#e2e4e1', 'сріблястий': '#e2e4e1', 'silver': '#e2e4e1',
             'starry': '#f0f2ea', 'starlight': '#f0f2ea',
 
-            // Оранжевые, желтые, бежевые (Твой случай!)
             'оранжевый': '#ff9500', 'помаранчевий': '#ff9500', 'orange': '#ff9500',
             'желтый': '#ffe600', 'жовтий': '#ffe600', 'yellow': '#ffe600',
             'персиковый': '#ffb380', 'персиковий': '#ffb380', 'peach': '#ffb380',
             'бежевый': '#f5f5dc', 'бежевий': '#f5f5dc', 'beige': '#f5f5dc',
             'янтарный': '#ffbf00', 'бурштиновий': '#ffbf00', 'amber': '#ffbf00',
 
-            // Синие и голубые
             'синий': '#007aff', 'синій': '#007aff', 'blue': '#007aff',
             'голубой': '#64b5f6', 'блакитний': '#64b5f6', 'sky blue': '#64b5f6',
-            'тихоокеанский': '#2d545e', 'pacific blue': '#2d545e',
-            'морской': '#005b96', 'sierra blue': '#9bb5ce',
+            'тихоокеанский': '#2d545e', 'pacific blue': '#2d545e', 'sierra blue': '#9bb5ce',
 
-            // Зеленые
             'зеленый': '#34c759', 'зелений': '#34c759', 'green': '#34c759',
             'салатовый': '#7ef069', 'салатовий': '#7ef069',
             'оливковый': '#556b2f', 'оливковий': '#556b2f', 'olive': '#556b2f',
-            'мятный': '#98ff98', 'м'ятний': '#98ff98', 'mint': '#98ff98',
+            'мятный': '#98ff98', 'мятний': '#98ff98', 'mint': '#98ff98',
             'альпийский': '#506754', 'alpine green': '#506754',
 
-            // Красные и розовые
             'красный': '#ff3b30', 'червоний': '#ff3b30', 'red': '#ff3b30',
             'розовый': '#ff2d55', 'рожевий': '#ff2d55', 'pink': '#ff2d55',
             'коралловый': '#ff6f61', 'кораловий': '#ff6f61', 'coral': '#ff6f61',
             'бордовый': '#800020', 'бордовий': '#800020', 'burgundy': '#800020',
 
-            // Фиолетовые и сиреневые
             'фиолетовый': '#af52de', 'фіолетовий': '#af52de', 'purple': '#af52de',
             'сиреневый': '#c8a2c8', 'бузковий': '#c8a2c8', 'lavender': '#e6e6fa',
 
-            // Титан, металл и золотой
             'золотой': '#ffd700', 'золотий': '#ffd700', 'gold': '#ffd700',
             'титан': '#8a8a8e', 'titanium': '#8a8a8e',
             'натуральный титан': '#beaba1', 'натуральний титан': '#beaba1', 'natural titanium': '#beaba1',
