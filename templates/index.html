@@ -148,7 +148,34 @@
         .spec-tag-power { background: rgba(255, 149, 0, 0.08); color: #ff9500; }
 
         .product-price { color: var(--accent); font-weight: 900; margin: 10px 0 14px 0; font-size: 22px; letter-spacing: -0.5px; }
-        .price-select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 14px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text); font-size: 14px; font-weight: 600; outline: none; box-sizing: border-box; }
+
+        /* КАСТОМНЫЙ SELECT СО СТРЕЛОЧКОЙ ПОД ТЕМНУЮ И СВЕТЛУЮ ТЕМЫ */
+        .price-select { 
+            width: 100%; 
+            padding: 12px 36px 12px 14px; 
+            margin-bottom: 12px; 
+            border-radius: 14px; 
+            border: 1px solid var(--glass-border); 
+            background-color: var(--glass-bg); 
+            color: var(--text); 
+            font-size: 14px; 
+            font-weight: 600; 
+            outline: none; 
+            box-sizing: border-box; 
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .price-select {
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            }
+        }
 
         .buy-btn { width: 100%; padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); background: var(--accent); color: white; font-weight: 800; cursor: pointer; font-size: 15px; transition: all 0.2s ease; box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3); display: inline-block; text-align: center; text-decoration: none; box-sizing: border-box; }
         .buy-btn:active { transform: scale(0.96); }
