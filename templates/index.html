@@ -363,6 +363,7 @@
                 </div>
 
             {% elif cat_lower in ['пленки', 'плівки'] or ('плівка' in title_lower or 'пленка' in title_lower) %}
+                {% set film_prices = p.get('price_list', []) %}
                 {% if 'матовая' in title_lower or 'матова' in title_lower %}
                     <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'; triggerHaptic('selection');">
                         <option value="400">Матова (Антиблік) — 400 грн</option>
@@ -371,11 +372,17 @@
                 {% else %}
                     <div class="memory-selector-title">Варіант плівки:</div>
                     <select id="select-{{ outer_index }}" class="price-select" onchange="document.getElementById('price-display-{{ outer_index }}').innerText = this.value + ' грн'; triggerHaptic('selection');">
-                        <option value="300">Глянцева (Стандарт) — 300 грн</option>
-                        <option value="400">Глянцева (Посилена) — 400 грн</option>
-                        <option value="500">Глянцева (Преміум самовідновлення) — 500 грн</option>
+                        {% if '300' in film_prices %}
+                            <option value="300">Глянцева (Стандарт) — 300 грн</option>
+                        {% endif %}
+                        {% if '400' in film_prices or film_prices|length == 0 %}
+                            <option value="400">Глянцева (Посилена) — 400 грн</option>
+                        {% endif %}
+                        {% if '500' in film_prices or film_prices|length == 0 %}
+                            <option value="500">Глянцева (Преміум самовідновлення) — 500 грн</option>
+                        {% endif %}
                     </select>
-                    <div class="product-price" id="price-display-{{ outer_index }}">300 грн</div>
+                    <div class="product-price" id="price-display-{{ outer_index }}">{{ film_prices[0] if film_prices|length > 0 else '400' }} грн</div>
                 {% endif %}
                 
                 <div id="btn-container-{{ outer_index }}">
@@ -479,7 +486,6 @@
     </div>
 
     <script>
-        // Инициализация Telegram Web App и раскрытие на полный экран
         let tg = window.Telegram.WebApp;
         try {
             tg.ready();
@@ -523,7 +529,6 @@
         }
         setInterval(nextSlide, 4000);
 
-        // Расширенная палитра цветов
         const colorPalette = {
             'черный': '#1c1c1e', 'чорний': '#1c1c1e', 'black': '#1c1c1e',
             'графит': '#383838', 'графіт': '#383838', 'graphite': '#383838',
