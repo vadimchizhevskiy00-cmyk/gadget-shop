@@ -530,7 +530,10 @@
             console.error("Telegram WebApp error:", e);
         }
 
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        // Защищенное считывание и фильтрация корзины
+        let rawCart = JSON.parse(localStorage.getItem('cart')) || [];
+        let cart = Array.isArray(rawCart) ? rawCart.filter(item => item && item.title && item.price) : [];
+        
         let selectedPhoneState = {};
         let currentNotifyProduct = "";
 
@@ -670,6 +673,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             initSmartCounters();
             initColorSwatches();
+            updateUI();
         });
 
         function triggerHaptic(type) {
@@ -749,7 +753,6 @@
             }
             localStorage.setItem('cart', JSON.stringify(cart));
         }
-        updateUI();
 
         function addToCart(title, price, btnElement) { 
             triggerHaptic('medium');
@@ -851,7 +854,9 @@
         function closeModal() { 
             triggerHaptic('light');
             document.getElementById('cartModal').style.display = 'none'; 
-            document.getElementById('floatingCartBar').style.display = 'flex';
+            if (cart.length > 0) {
+                document.getElementById('floatingCartBar').style.display = 'flex';
+            }
             updateUI();
         }
 
@@ -921,12 +926,13 @@
             if (digitsOnly.length !== 9) { alert('Будь ласка, введіть коректний номер (9 цифр після +380)!'); return; }
             
             let orderNum = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+            let orderedItems = [...cart];
 
             fetch('/order', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
                     type: 'order', 
-                    items: cart, 
+                    items: orderedItems, 
                     name: name, 
                     phone: phoneInput,
                     order_id: orderNum,
@@ -936,16 +942,16 @@
                 triggerHaptic('success');
                 localStorage.removeItem('cart');
                 cart = [];
-                showReceipt(orderNum, name, phoneInput);
+                showReceipt(orderNum, name, phoneInput, orderedItems);
             });
         }
 
-        function showReceipt(orderId, name, phone) {
+        function showReceipt(orderId, name, phone, items) {
             document.getElementById('cartModal').style.display = 'none';
             document.getElementById('receiptOrderId').innerText = `ЧЕК #${orderId}`;
             document.getElementById('receiptClientInfo').innerHTML = `👤 <b>Клієнт:</b> ${name}<br>📞 <b>Тел:</b> ${phone}`;
 
-            let itemsHtml = cart.map(i => `
+            let itemsHtml = items.map(i => `
                 <div class="receipt-row">
                     <span>${i.title}</span>
                     <b>${i.price} грн</b>
@@ -953,7 +959,7 @@
             `).join('');
             document.getElementById('receiptItemsList').innerHTML = itemsHtml;
 
-            let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
+            let totalPrice = items.reduce((sum, item) => sum + Number(item.price), 0);
             document.getElementById('receiptTotalSum').innerText = `${totalPrice} грн`;
 
             let checkUrl = `${window.location.origin}/admin/check?order=${orderId}`;
