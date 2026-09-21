@@ -40,7 +40,7 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
-            padding-bottom: 30px;
+            padding-bottom: 90px; /* Запас снизу, чтобы плавающая панель не перекрывала контент */
             background-image: 
                 radial-gradient(circle at 15% 15%, rgba(0, 122, 255, 0.15) 0%, transparent 45%),
                 radial-gradient(circle at 85% 85%, rgba(48, 209, 88, 0.1) 0%, transparent 45%);
@@ -159,6 +159,89 @@
         .buy-btn.added { background: var(--green) !important; box-shadow: 0 4px 16px rgba(48, 209, 88, 0.4) !important; }
         .buy-btn-notify { background: var(--orange); box-shadow: 0 4px 16px rgba(255, 159, 10, 0.3); margin-bottom: 8px; }
         .buy-btn-ask { background: #229ED9; box-shadow: 0 4px 16px rgba(34, 158, 217, 0.3); }
+
+        /* --- ПЛАВАЮЩАЯ СТЕКЛЯННАЯ ПАНЕЛЬ КОРЗИНЫ (FLOATING CART BAR) --- */
+        .floating-cart-bar {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            background: rgba(22, 27, 38, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 122, 255, 0.25);
+            z-index: 90;
+            transform: translateY(120%);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .floating-cart-bar.visible {
+            transform: translateY(0);
+        }
+
+        .floating-cart-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cart-badge-count {
+            background: var(--accent);
+            color: white;
+            font-size: 13px;
+            font-weight: 800;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.5);
+        }
+
+        .floating-cart-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .floating-cart-title {
+            font-size: 12px;
+            opacity: 0.6;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .floating-cart-sum {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .floating-cart-btn {
+            background: var(--accent);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            transition: transform 0.15s ease;
+        }
+
+        .floating-cart-bar:active .floating-cart-btn {
+            transform: scale(0.95);
+        }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; justify-content: center; align-items: flex-end; }
         .modal-content { background: #161b26; border: 1px solid var(--glass-border); padding: 22px; border-radius: 28px 28px 0 0; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; box-sizing: border-box; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
@@ -412,6 +495,21 @@
         {% endfor %}
     {% endif %}
 
+    <!-- ПЛАВАЮЩАЯ СТЕКЛЯННАЯ ПАНЕЛЬ КОРЗИНЫ -->
+    <div class="floating-cart-bar" id="floatingCartBar" onclick="openCartModal()">
+        <div class="floating-cart-left">
+            <div class="cart-badge-count" id="floatingCartCount">0</div>
+            <div class="floating-cart-info">
+                <span class="floating-cart-title">Ваше замовлення</span>
+                <span class="floating-cart-sum" id="floatingCartSum">0 грн</span>
+            </div>
+        </div>
+        <div class="floating-cart-btn">
+            <span>Оформити</span>
+            <span>➔</span>
+        </div>
+    </div>
+
     <!-- МОДАЛЬНІ ВІКНА -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
@@ -501,13 +599,8 @@
         let selectedPhoneState = {};
         let currentNotifyProduct = "";
 
-        let mainButton = tg.MainButton;
-        mainButton.color = tg.themeParams.button_color || "#007aff";
-        
-        Telegram.WebApp.onEvent('mainButtonClicked', function(){ 
-            triggerHaptic('medium');
-            openCartModal(); 
-        });
+        // Прячем системную кнопку Telegram, так как у нас теперь своя плавающая панель
+        if (tg.MainButton) { tg.MainButton.hide(); }
 
         function getTelegramChatId() {
             try {
@@ -733,12 +826,15 @@
 
         function updateUI() {
             let totalCount = cart.length;
+            let bar = document.getElementById('floatingCartBar');
+
             if (totalCount > 0) {
                 let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
-                mainButton.setText(`🛒 Оформити замовлення (${totalCount}) • ${totalPrice} грн`);
-                mainButton.show();
+                document.getElementById('floatingCartCount').innerText = totalCount;
+                document.getElementById('floatingCartSum').innerText = `${totalPrice} грн`;
+                bar.classList.add('visible');
             } else {
-                mainButton.hide();
+                bar.classList.remove('visible');
                 closeModal();
             }
             localStorage.setItem('cart', JSON.stringify(cart));
@@ -840,13 +936,14 @@
             } else { recBox.style.display = 'none'; }
 
             document.getElementById('cartModal').style.display = 'flex';
-            mainButton.hide();
+            document.getElementById('floatingCartBar').style.display = 'none';
         }
 
         function closeModal() { 
             triggerHaptic('light');
             document.getElementById('cartModal').style.display = 'none'; 
-            if (cart.length > 0) mainButton.show();
+            document.getElementById('floatingCartBar').style.display = 'flex';
+            updateUI();
         }
 
         function openNotifyModal(productTitle) {
